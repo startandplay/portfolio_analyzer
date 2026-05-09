@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: portfolio-postgres
+    environment:
+      POSTGRES_DB: portfoliodb
+      POSTGRES_USER: portfolio
+      POSTGRES_PASSWORD: portfolio123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portfoliodb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - portfolio-network
+
+  # Spring Boot Application
+  portfolio-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: portfolio-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/portfoliodb
+      SPRING_DATASOURCE_USERNAME: portfolio
+      SPRING_DATASOURCE_PASSWORD: portfolio123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - portfolio-network
+    restart: unless-stopped
+
+  # Optional: pgAdmin for database management
+#  pgadmin:
+#    image: dpage/pgadmin4:latest
+#    container_name: portfolio-pgadmin
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: admin@portfolio.com
+#      PGADMIN_DEFAULT_PASSWORD: admin123
+#    ports:
+#      - "5050:80"
+#    depends_on:
+#      - postgres
+#    networks:
+#      - portfolio-network
+#    restart: unless-stopped
+
+
+  # Optional: pgweb for database management
+  pgweb:
+    image: sosedoff/pgweb
+    container_name: portfolio-pgweb
+    depends_on:
+      - postgres
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: postgres://portfolio:portfolio123@postgres:5432/portfoliodb?sslmode=disable
+    networks:
+      - portfolio-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  portfolio-network:
+    driver: bridge
