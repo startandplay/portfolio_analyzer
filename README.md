@@ -178,35 +178,124 @@ Resposta:
 ## 📁 Estrutura do Projeto
 
 ```
-portfolio-analytics/
-├── src/main/java/com/analytics/portfolio/
-│   ├── model/              # Entidades JPA
-│   │   ├── Portfolio.java
-│   │   ├── Asset.java
-│   │   ├── Position.java
-│   │   ├── Transaction.java
-│   │   ├── Dividend.java
-│   │   └── PriceHistory.java
-│   │
-│   ├── dto/                # Data Transfer Objects
-│   │   ├── PortfolioMetrics.java
-│   │   └── AssetMetrics.java
-│   │
-│   ├── repository/         # Repositórios Spring Data
-│   │   └── *.java
-│   │
-│   ├── service/            # Lógica de negócio
-│   │   └── MetricsCalculationService.java
-│   │
-│   ├── integration/        # Integrações externas
-│   │   ├── XTBImportService.java
-│   │   └── BinanceImportService.java
-│   │
-│   └── controller/         # Controllers REST
-│       └── PortfolioController.java
+├───main
+│   ├───java
+│   │   └───com
+│   │       └───analytics
+│   │           └───portfolio
+│   │               │   PortfolioAnalyticsApplication.java
+│   │               │
+│   │               ├───clients
+│   │               │       YahooFinanceClient.java
+│   │               │
+│   │               ├───config
+│   │               │       DataInitializer.java
+│   │               │       JacksonConfig.java
+│   │               │       JwtProperties.java
+│   │               │       OpenApiConfig.java
+│   │               │       YahooFinanceConfig.java
+│   │               │
+│   │               ├───controller
+│   │               │       AssetController.java
+│   │               │       AuthController.java
+│   │               │       ClosedPositionController.java
+│   │               │       HoldingsController.java
+│   │               │       MarketDataController.java
+│   │               │       PortfolioController.java
+│   │               │
+│   │               ├───dto
+│   │               │   │   AssetMetrics.java
+│   │               │   │   ClosedPositionStats.java
+│   │               │   │   MarketQuoteDto.java
+│   │               │   │   PortfolioMetrics.java
+│   │               │   │   YahooFinanceDTO.java
+│   │               │   │
+│   │               │   └───auth
+│   │               │           AuthResponse.java
+│   │               │           ChangePasswordRequest.java
+│   │               │           LoginRequest.java
+│   │               │           PasswordResetRequest.java
+│   │               │           RefreshTokenRequest.java
+│   │               │           RegisterRequest.java
+│   │               │
+│   │               ├───enums
+│   │               │       AssetSource.java
+│   │               │       AssetType.java
+│   │               │       TransactionType.java
+│   │               │
+│   │               ├───exceptions
+│   │               │       GlobalExceptionHandler.java
+│   │               │
+│   │               ├───integration
+│   │               │       BinanceImportService.java
+│   │               │       XTBImportService.java
+│   │               │
+│   │               ├───model
+│   │               │       Asset.java
+│   │               │       CashFlow.java
+│   │               │       ClosedPosition.java
+│   │               │       Dividend.java
+│   │               │       Fingerprintable.java
+│   │               │       Portfolio.java
+│   │               │       Position.java
+│   │               │       PriceHistory.java
+│   │               │       RefreshToken.java
+│   │               │       Role.java
+│   │               │       Transaction.java
+│   │               │       User.java
+│   │               │
+│   │               ├───repository
+│   │               │       AssetRepository.java
+│   │               │       CashFlowRepository.java
+│   │               │       ClosedPositionRepository.java
+│   │               │       DividendRepository.java
+│   │               │       PortfolioRepository.java
+│   │               │       PositionRepository.java
+│   │               │       PriceHistoryRepository.java
+│   │               │       RefreshTokenRepository.java
+│   │               │       RoleRepository.java
+│   │               │       TransactionRepository.java
+│   │               │       UserRepository.java
+│   │               │
+│   │               ├───schedule
+│   │               │       PriceUpdateScheduler.java
+│   │               │
+│   │               ├───security
+│   │               │       CustomUserDetailsService.java
+│   │               │       JwtAuthenticationEntryPoint.java
+│   │               │       JwtAuthenticationFilter.java
+│   │               │       JwtTokenProvider.java
+│   │               │       SecurityConfig.java
+│   │               │
+│   │               ├───service
+│   │               │       AuthService.java
+│   │               │       ClosedPositionService.java
+│   │               │       DuplicateDetectionService.java
+│   │               │       EmailService.java
+│   │               │       HoldingsCalculationService.java
+│   │               │       MetricsCalculationService.java
+│   │               │       PositionService.java
+│   │               │       RefreshTokenService.java
+│   │               │       YahooFinanceService.java
+│   │               │
+│   │               ├───utils
+│   │               │       PortfolioUtils.java
+│   │               │
+│   │               └───{model,repository,service,controller,dto,config,integration,util}
+│   └───resources
+│       │   application.properties
+│       │
+│       └───static
+│               app.js
+│               index.html
 │
-└── src/main/resources/
-    └── application.properties
+└───test
+    └───java
+        │   YahooFinanceApiTest.java
+        │
+        └───com
+            └───analytics
+                └───portfolio
 ```
 
 ## 🔧 Configuração Avançada
