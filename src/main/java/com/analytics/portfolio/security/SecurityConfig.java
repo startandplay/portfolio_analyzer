@@ -3,7 +3,6 @@ package com.analytics.portfolio.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -95,21 +94,8 @@ public class SecurityConfig {
                         ex.authenticationEntryPoint(authEntryPoint))
 
                 .authorizeHttpRequests(auth -> auth
-
-                        // ✅ PUBLIC - sem autenticação
-                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-
-                        // ✅ PUBLIC - métodos específicos (extra segurança)
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
-                        .requestMatchers(HttpMethod.GET,  "/api/auth/verify-email").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
-
                         // Admin
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
                         // Tudo o resto requer autenticação
                         .anyRequest().authenticated()
                 )

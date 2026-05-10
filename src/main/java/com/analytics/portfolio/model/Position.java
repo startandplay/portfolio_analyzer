@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 @Entity
@@ -74,7 +75,7 @@ public class Position {
             
             if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
                 unrealizedPLPercentage = unrealizedPL
-                    .divide(totalInvested, 4, BigDecimal.ROUND_HALF_UP)
+                    .divide(totalInvested, 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100));
             }
         }
