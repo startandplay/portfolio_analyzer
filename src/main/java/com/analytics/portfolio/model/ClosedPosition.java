@@ -3,7 +3,6 @@ package com.analytics.portfolio.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-import org.apache.commons.codec.digest.DigestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -167,6 +166,7 @@ public class ClosedPosition implements Fingerprintable {
     private String importFingerprint;
 
     @PrePersist
+    @PreUpdate
     protected void onCreate() {
         createdAt = LocalDateTime.now();
 
@@ -176,23 +176,9 @@ public class ClosedPosition implements Fingerprintable {
 
     }
 
+    @Override
     public String generateFingerprint() {
-        // Se tem positionId do XTB, usar directamente
-        if (positionId != null && !positionId.isBlank()) {
-            return "XTB_" + positionId;
-        }
-
-        // Fallback: hash dos dados do trade (imutáveis)
-        String raw = String.join("|",
-                nullSafe(ticker),
-                nullSafe(type),
-                nullSafe(volume),
-                nullSafe(openTime),
-                nullSafe(closeTime)
-        );
-
-        return DigestUtils.sha256Hex(raw);
-
+        return new GenerateFingerprint(positionId, openPrice, openTime, portfolio.getId()).generate();
     }
 
     private String nullSafe(Object o) {

@@ -7,11 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.codec.digest.DigestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Entity
 @Table(name = "transaction")
@@ -93,38 +91,9 @@ public class Transaction  implements Fingerprintable {
      * Gera fingerprint único para a transação
      * Usado para prevenir duplicatas na importação
      */
+    @Override
     public String generateFingerprint() {
-        // Estratégia 1: Se tem external ID, usar
-        if (externalId != null && !externalId.isBlank() &&
-                importSource != null && !importSource.isBlank()) {
-
-            return String.format("%d_%s_%s",
-                    portfolio.getId(), importSource, externalId);
-        }
-
-        // Estratégia 2: Hash dos dados principais
-        String data = String.format("%d_%d_%s_%s_%s_%s",
-                portfolio.getId(),
-                asset.getId(),
-                type.name(),
-                transactionDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                quantity.stripTrailingZeros().toPlainString(),
-                price.stripTrailingZeros().toPlainString()
-        );
-
-        return DigestUtils.sha256Hex(data);
-    }
-
-    /**
-     * Garante que fingerprint existe após carregar do banco ou criar
-     */
-    @PostLoad
-    @PostPersist
-    @PostUpdate
-    protected void ensureFingerprintExists() {
-        if (importFingerprint == null && portfolio != null && asset != null) {
-            importFingerprint = generateFingerprint();
-        }
+        return  new GenerateFingerprint(externalId, totalAmount, transactionDate, portfolio.getId()).generate();
     }
 
 }

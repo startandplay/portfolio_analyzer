@@ -4,7 +4,6 @@ import com.analytics.portfolio.enums.TransactionType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-import org.apache.commons.codec.digest.DigestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -98,6 +97,7 @@ public class CashFlow implements Fingerprintable {
     private String importFingerprint;
 
     @PrePersist
+    @PreUpdate
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
@@ -108,41 +108,8 @@ public class CashFlow implements Fingerprintable {
         }
     }
 
-    /**
-     * Gera fingerprint único para a transação
-     * Usado para prevenir duplicatas na importação
-     */
+    @Override
     public String generateFingerprint() {
-        // Estratégia 1: Se tem external ID, usar
-        if (externalId != null && !externalId.isBlank() &&
-                importSource != null && !importSource.isBlank()) {
-
-            return String.format("%d_%s_%s",
-                    portfolio.getId(), importSource, externalId);
-        }
-
-        // Estratégia 2: Hash dos dados principais
-        String data = String.format("%d_%s_%s_%s",
-                portfolio.getId(),
-                externalId,
-                amount.toString(),
-                type.name()
-        );
-
-        return DigestUtils.sha256Hex(data);
+        return  new GenerateFingerprint(externalId, amount, flowDate, portfolio.getId()).generate();
     }
-
-    /**
-     * Garante que fingerprint existe após carregar do banco ou criar
-     */
-    @PostLoad
-    @PostPersist
-    @PostUpdate
-    protected void ensureFingerprintExists() {
-        if (importFingerprint == null && portfolio != null) {
-            importFingerprint = generateFingerprint();
-        }
-    }
-
-
 }

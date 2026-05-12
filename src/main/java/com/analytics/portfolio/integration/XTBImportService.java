@@ -197,7 +197,7 @@ public class XTBImportService {
 
         for (int i = startDataRowIndex; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
-            if (row == null || isEmptyRow(row)) continue;
+            if (row == null || isInvalidRow(row)) continue;
 
             try {
                 XTBRowData rowData = parseXTBRowData(row);
@@ -230,7 +230,7 @@ public class XTBImportService {
         int startDataRowIndex = 5;
         for (int i = startDataRowIndex; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
-            if (row == null || isEmptyRow(row)) continue;
+            if (row == null || isInvalidRow(row)) continue;
             try {
                 ClosedPosition cp = buildClosedPosition(row, colIdx, portfolio);
                 if (cp != null) result.add(cp);
@@ -549,16 +549,23 @@ public class XTBImportService {
         return BigDecimal.ZERO;
     }
 
-    private boolean isEmptyRow(Row row) {
+    /*
+    * Returns False is a row is null or has more than 2 empty cells
+    * */
+    private boolean isInvalidRow(Row row) {
         if (row == null) return true;
 
-        for (int i = 0; i < 6; i++) {
+        int firstCells = 6;
+        int emptyCells = 0;
+
+        for (int i = 0; i < firstCells; i++) {
             Cell cell = row.getCell(i);
             if (cell != null && cell.getCellType() != CellType.BLANK) {
-                return false;
+                emptyCells ++;
             }
         }
-        return true;
+
+        return emptyCells > 2;
     }
 
 
