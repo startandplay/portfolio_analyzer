@@ -163,12 +163,7 @@ public class YahooFinanceService {
         // Buscar todas as positions desse ativo
         List<Position> positions = positionRepository.findAll().stream()
                 .filter(p -> p.getAsset().getId().equals(asset.getId()))
-                .toList();
-
-        for (Position position : positions) {
-            position.setCurrentPrice(price);
-            // currentValue, unrealizedPL são calculados automaticamente no @PrePersist
-        }
+                .peek(p -> p.setCurrentPrice(price)).toList();
 
         if (!positions.isEmpty()) {
             positionRepository.saveAll(positions);
