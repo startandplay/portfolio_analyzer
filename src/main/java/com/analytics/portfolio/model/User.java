@@ -66,7 +66,7 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     @Builder.Default
-    private boolean enabled = false;
+    private boolean enabled = true; //TODO: CHANGE After Create the email verification
 
     @Column(name = "account_non_locked", nullable = false)
     @Builder.Default
@@ -76,7 +76,7 @@ public class User implements UserDetails {
 
     @Column(name = "email_verified", nullable = false)
     @Builder.Default
-    private boolean emailVerified = false;
+    private boolean emailVerified = true; //TODO: CHANGE After Create the email verification
 
     @Column(name = "email_verification_token", length = 255)
     @JsonIgnore

@@ -4,14 +4,8 @@ import com.analytics.portfolio.dto.AssetMetrics;
 import com.analytics.portfolio.dto.PortfolioMetrics;
 import com.analytics.portfolio.integration.BinanceImportService;
 import com.analytics.portfolio.integration.XTBImportService;
-import com.analytics.portfolio.model.Dividend;
-import com.analytics.portfolio.model.Portfolio;
-import com.analytics.portfolio.model.Position;
-import com.analytics.portfolio.model.Transaction;
-import com.analytics.portfolio.repository.DividendRepository;
-import com.analytics.portfolio.repository.PortfolioRepository;
-import com.analytics.portfolio.repository.PositionRepository;
-import com.analytics.portfolio.repository.TransactionRepository;
+import com.analytics.portfolio.model.*;
+import com.analytics.portfolio.repository.*;
 import com.analytics.portfolio.service.MetricsCalculationService;
 import com.analytics.portfolio.service.PositionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,10 +32,12 @@ public class PortfolioController {
     private final PositionRepository positionRepository;
     private final TransactionRepository transactionRepository;
     private final DividendRepository dividendRepository;
+    private final CashFlowRepository cashFlowRepository;
     private final MetricsCalculationService metricsService;
     private final XTBImportService xtbImportService;
     private final BinanceImportService binanceImportService;
     private final PositionService positionService;
+
 
     @GetMapping
     @Operation(summary = "Get all portfolios")
@@ -109,6 +105,14 @@ public class PortfolioController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/{id}/cash-flows")
+    @Transactional(readOnly = true)
+    @Operation(summary = "Get portfolio metrics and analytics")
+    public ResponseEntity<List<CashFlow>> getPortfolioCashFlows(@PathVariable Long id) {
+        List<CashFlow> cashFlows = cashFlowRepository.findByPortfolioId(id);
+        return ResponseEntity.ok(cashFlows);
+    }
+
     @GetMapping("/{id}/positions")
     @Transactional(readOnly = true)
     @Operation(summary = "Get all positions in portfolio")
@@ -142,9 +146,9 @@ public class PortfolioController {
     @Transactional(readOnly = true)
     @Operation(summary = "Get all transactions")
     public ResponseEntity<List<Transaction>> getTransactions(@PathVariable Long id) {
-        List<Transaction> trades = transactionRepository
+        List<Transaction> transactions = transactionRepository
                 .findByPortfolioIdOrderByTransactionDateDesc(id);
-        return ResponseEntity.ok(trades);
+        return ResponseEntity.ok(transactions);
     }
 
     @GetMapping("/{id}/dividends")
@@ -240,7 +244,6 @@ public class PortfolioController {
             int positionsCalculated,
             String message
     ) {}
-
 
 
     // DTO para resultado de importação

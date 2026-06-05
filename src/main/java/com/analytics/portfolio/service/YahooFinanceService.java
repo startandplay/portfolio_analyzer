@@ -71,7 +71,7 @@ public class YahooFinanceService {
             }
 
             // Salvar histórico de preço
-            savePriceHistory(ticker, quote);
+            updatePriceHistory(ticker, quote);
 
             // Atualizar todas as positions desse ativo
             updatePositionsForAsset(ticker, price);
@@ -119,19 +119,10 @@ public class YahooFinanceService {
                     String symbol = PortfolioUtils.mapToPT(quote.symbol());
                     BigDecimal price = quote.regularMarketPrice();
 
-                    // Atualizar asset
-                    Optional<Asset> assetOpt = assetRepository.findBySymbol(symbol);
-                    if (assetOpt.isPresent()) {
-                        Asset asset = assetOpt.get();
-                        asset.setCurrentPrice(price);
-                        asset.setLastPriceUpdate(LocalDateTime.now());
-                        assetRepository.save(asset);
-                    }
+                    updateAssets(symbol, price);
 
-                    // Salvar histórico
-                    savePriceHistory(symbol, quote);
+                    updatePriceHistory(symbol, quote);
 
-                    // Atualizar positions
                     updatePositionsForAsset(symbol, price);
 
                     updated++;
@@ -144,6 +135,20 @@ public class YahooFinanceService {
         } catch (Exception e) {
             log.error("Erro ao atualizar preços do portfolio: {}", e.getMessage());
             return 0;
+        }
+    }
+
+    private void updateAssets(String symbol, BigDecimal price) {
+
+        Optional<Asset> assetOpt = assetRepository.findBySymbol(symbol);
+
+        if (assetOpt.isPresent()) {
+            Asset asset = assetOpt.get();
+            asset.setCurrentPrice(price);
+            asset.setLastPriceUpdate(LocalDateTime.now());
+
+            assetRepository.save(asset);
+            log.info("Asset {} updated.", symbol);
         }
     }
 
@@ -174,7 +179,7 @@ public class YahooFinanceService {
     /**
      * Salva o histórico de preços
      */
-    private void savePriceHistory(String symbol, MarketQuoteDto.Quote quote) {
+    private void updatePriceHistory(String symbol, MarketQuoteDto.Quote quote) {
         Optional<Asset> assetOpt = assetRepository.findBySymbol(symbol);
 
         if (assetOpt.isEmpty()) {

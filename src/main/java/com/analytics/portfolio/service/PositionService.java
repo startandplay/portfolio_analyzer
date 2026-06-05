@@ -1,5 +1,6 @@
 package com.analytics.portfolio.service;
 
+import com.analytics.portfolio.dto.IPositionSummaryAggregation;
 import com.analytics.portfolio.enums.TransactionType;
 import com.analytics.portfolio.model.*;
 import com.analytics.portfolio.repository.DividendRepository;
@@ -40,26 +41,42 @@ public class PositionService {
     public List<Position> recalculatePositions(Long portfolioId) {
         log.info("Recalculando positions para portfolio {}", portfolioId);
 
-        // 1. Buscar todas as transações
+        // 1. Get all transactions
         List<Transaction> transactions = transactionRepository
                 .findByPortfolioIdOrderByTransactionDateDesc(portfolioId);
 
-        // 2. Buscar todos os dividendos
-        List<Dividend> dividends = dividendRepository.findByPortfolioId(portfolioId);
-
-        // 3. Calcular posições atuais
+        // 2. Get some data from transactions
         Map<Asset, PositionData> positionsMap = calculatePositionsFromTransactions(transactions);
 
-        // 4. Deletar posições antigas
+        // 3. Get calculated data from an aggregation between transactions and closed position
+        List<IPositionSummaryAggregation> aggregatedPositions = positionRepository.recalculatePortfolioPositions(portfolioId);
+
+        // 4. fill positionsMap with calculated data
+        positionsMap.forEach((asset, positionData) -> {
+
+            aggregatedPositions.stream()//
+                    .filter(p -> p.getAssetId().equals(asset.getId()))//
+                    .forEach(p -> {
+                        positionData.averageBuyPrice = p.getAveragePurchasePrice();
+                        positionData.quantity = p.getCurrentQuantity();
+                        positionData.totalInvested = p.getCurrentTotalPurchaseValue().abs();
+                        positionData.realizedPL = p.getTotalRealizedPnl();
+                    });
+
+        });
+
+        // 5. Delete posições antigas
         positionRepository.deleteByPortfolioId(portfolioId);
 
-        // 5. Criar novas posições (só se quantity > 0)
+        // 6. create new positions
         List<Position> newPositions = positionsMap.entrySet().stream()
                 //.filter(entry -> entry.getValue().quantity.compareTo(BigDecimal.ZERO) > 0)
                 .map(entry -> createPosition(entry.getKey(), entry.getValue()))
                 .toList();
 
-        // 6. Salvar
+
+
+        // 6. Save to DB
         List<Position> saved = positionRepository.saveAll(newPositions);
 
         log.info("Recalculadas {} posições para portfolio {}", saved.size(), portfolioId);
@@ -76,21 +93,20 @@ public class PositionService {
 
         Map<Asset, PositionData> positions = new HashMap<>();
 
-        // ===== PROCESSAR TRANSAÇÕES =====
         for (Transaction t : transactions) {
             Asset asset = t.getAsset();
             Portfolio portfolio = t.getPortfolio();
             TransactionType type = t.getType(); // Cache para evitar múltiplas chamadas
-
+        
             PositionData data = positions.computeIfAbsent(asset,
                     a -> new PositionData(portfolio, asset));
 
             // Otimizado: switch em vez de if/else (mais eficiente em Java moderno)
             switch (type) {
                 case BUY -> processBuyTransaction(t, data);
-                case SELL -> processSellTransaction(t, data);
                 case DIVIDEND -> processDividendTransaction(t, data);
-                case WITHHOLDING_TAX -> processWithholdingTaxTransaction(t, data);
+                //case SELL -> processSellTransaction(t, data);
+               // case WITHHOLDING_TAX -> processWithholdingTaxTransaction(t, data);
             }
         }
 
@@ -119,15 +135,6 @@ public class PositionService {
                 t.getTransactionDate().isBefore(data.firstPurchaseDate)) {
             data.firstPurchaseDate = t.getTransactionDate();
         }
-
-        // Adicionar quantidade e custo
-        BigDecimal cost = t.getQuantity().multiply(t.getPrice());
-        if (t.getFees() != null) {
-            cost = cost.add(t.getFees());
-        }
-
-        data.quantity = data.quantity.add(t.getQuantity());
-        data.totalInvested = data.totalInvested.add(cost);
     }
 
 
@@ -173,17 +180,15 @@ public class PositionService {
         return Position.builder()
                 .portfolio(data.portfolio)
                 .asset(asset)
-                // ===== CAMPOS CALCULADOS DAS TRANSAÇÕES =====
                 .quantity(data.quantity)
                 .averageBuyPrice(data.averageBuyPrice)
                 .totalInvested(data.totalInvested)
                 .realizedPL(data.realizedPL)
                 .totalDividendsReceived(data.totalDividendsReceived)
                 .firstPurchaseDate(data.firstPurchaseDate)
-                // ===== CAMPOS QUE PRECISAM DE API EXTERNA =====
-                .currentPrice(null)  // Requer Yahoo Finance API, Alpha Vantage, etc
-                // currentValue, unrealizedPL, unrealizedPLPercentage
-                // são calculados automaticamente no @PrePersist se currentPrice != null
+                // The current price is obtained from the Asset that already read the Yahoo Finance API
+                // verify if currentPrice is null and call the YahooFinanceService to get the current prices
+                .currentPrice(asset.getCurrentPrice())
                 .lastUpdated(LocalDateTime.now())
                 .build();
     }

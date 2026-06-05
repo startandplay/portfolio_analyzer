@@ -2,6 +2,7 @@ package com.analytics.portfolio.model;
 
 import com.analytics.portfolio.enums.TransactionType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -40,7 +41,8 @@ public class CashFlow implements Fingerprintable {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "portfolio_id", nullable = false)
+    @JoinColumn(name = "portfolio_id", referencedColumnName = "id", nullable = false)
+    @JsonIgnore
     @JsonBackReference
     private Portfolio portfolio;
 
@@ -110,6 +112,6 @@ public class CashFlow implements Fingerprintable {
 
     @Override
     public String generateFingerprint() {
-        return  new GenerateFingerprint(externalId, amount, flowDate, portfolio.getId()).generate();
+        return  new GenerateFingerprint(externalId, amount, flowDate, null, portfolio.getId()).generate();
     }
 }

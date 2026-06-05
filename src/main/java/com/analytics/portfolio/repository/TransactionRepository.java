@@ -82,6 +82,5 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             }
             return BigDecimal.ZERO;
         }
-
     }
 }

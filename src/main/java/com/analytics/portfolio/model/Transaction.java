@@ -1,7 +1,8 @@
 package com.analytics.portfolio.model;
 
 import com.analytics.portfolio.enums.TransactionType;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,12 +26,12 @@ public class Transaction  implements Fingerprintable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "portfolio_id", nullable = false)
-    @JsonIgnoreProperties({"transaction", "positions", "dividends", "hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private Portfolio portfolio;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "asset_id", nullable = false)
-    @JsonIgnoreProperties({"transaction", "positions", "dividends", "hibernateLazyInitializer", "handler"})
+    @JsonBackReference
     private Asset asset;
 
     @Enumerated(EnumType.STRING)
@@ -93,7 +94,7 @@ public class Transaction  implements Fingerprintable {
      */
     @Override
     public String generateFingerprint() {
-        return  new GenerateFingerprint(externalId, totalAmount, transactionDate, portfolio.getId()).generate();
+        return  new GenerateFingerprint(externalId, totalAmount, transactionDate, null, portfolio.getId()).generate();
     }
 
 }

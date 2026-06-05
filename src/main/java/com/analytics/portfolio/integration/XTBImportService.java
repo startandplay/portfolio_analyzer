@@ -241,7 +241,10 @@ public class XTBImportService {
     }
 
     private ClosedPosition buildClosedPosition(Row row, Map<String, Integer> cols, Portfolio portfolio) {
+        Optional<Asset> asset = assetRepository.findByTicker(getByCol(row, cols, "ticker"));
+
         return ClosedPosition.builder()
+                .asset(asset.get())
                 .portfolio(portfolio)
                 .instrument(getByCol(row, cols, "instrument"))
                 .category(getByCol(row, cols, "category"))
@@ -340,9 +343,8 @@ public class XTBImportService {
      * Usado quando a linha tem Ticker (ativo)
      */
     private Transaction createTransaction(XTBRowData data, Portfolio portfolio) {
-
         // Determinar tipo baseado no comment ou amount
-        TransactionType type = getType(data.type.toLowerCase());
+        TransactionType type = getType(data.getType().toLowerCase());
         TransactionDto transactionDto = transactionParser(data.getComment(), type);
         BigDecimal totalAmount = data.getAmount();
 
@@ -430,7 +432,7 @@ public class XTBImportService {
             qty = qty.split("/")[0]; // Get the qty before /
         }
 
-        BigDecimal price = new BigDecimal(part[4]).setScale(3, RoundingMode.UNNECESSARY);
+        BigDecimal price = new BigDecimal(part[4]).setScale(3, RoundingMode.HALF_UP);
 
         return new TransactionDto(qty, price, "", BigDecimal.ZERO);
     }
@@ -540,7 +542,7 @@ public class XTBImportService {
         } else if (cell.getCellType() == CellType.STRING) {
             String value = cell.getStringCellValue().trim().replace(",", ".");
             try {
-                return new BigDecimal(value);
+                return !value.isBlank() ? new BigDecimal(value) : BigDecimal.ZERO;
             } catch (NumberFormatException e) {
                 return BigDecimal.ZERO;
             }
@@ -550,8 +552,8 @@ public class XTBImportService {
     }
 
     /*
-    * Returns False is a row is null or has more than 2 empty cells
-    * */
+     * Returns False is a row is null or has more than 2 empty cells
+     * */
     private boolean isInvalidRow(Row row) {
         if (row == null) return true;
 
@@ -560,8 +562,8 @@ public class XTBImportService {
 
         for (int i = 0; i < firstCells; i++) {
             Cell cell = row.getCell(i);
-            if (cell != null && cell.getCellType() != CellType.BLANK) {
-                emptyCells ++;
+            if (cell == null || cell.getCellType() == CellType.BLANK) {
+                emptyCells++;
             }
         }
 

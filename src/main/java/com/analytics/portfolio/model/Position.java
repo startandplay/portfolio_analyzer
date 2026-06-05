@@ -69,16 +69,15 @@ public class Position {
     @PrePersist
     @PreUpdate
     protected void calculateFields() {
-        if (currentPrice != null && quantity != null) {
+        if (currentPrice != null && quantity != null && quantity.compareTo(BigDecimal.ZERO) > 0) {
             currentValue = currentPrice.multiply(quantity);
+            // the base calculation should not be based on the totalInvested only. because some assets may already have been sold
             unrealizedPL = currentValue.subtract(totalInvested);
-            
-            if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
-                unrealizedPLPercentage = unrealizedPL
+            unrealizedPLPercentage = unrealizedPL
                     .divide(totalInvested, 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100));
-            }
         }
+
         lastUpdated = LocalDateTime.now();
     }
 }

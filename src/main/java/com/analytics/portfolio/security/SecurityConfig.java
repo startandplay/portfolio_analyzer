@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -16,7 +15,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -32,17 +30,18 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter      jwtFilter;
-    private final UserDetailsService           userDetailsService;
+    private final UserDetailsService userDetailsService;
     private final JwtAuthenticationEntryPoint  authEntryPoint;
 
     // Endpoints completamente públicos (sem qualquer autenticação)
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/api/auth/register",
+          /*  "/api/auth/register",
             "/api/auth/login",
             "/api/auth/refresh",
             "/api/auth/verify-email",
             "/api/auth/forgot-password",
-            "/api/auth/reset-password",
+            "/api/auth/reset-password",*/
+            "/api/auth/**",
             // Swagger
             "/swagger-ui/**",
             "/swagger-ui.html",
@@ -52,8 +51,6 @@ public class SecurityConfig {
             "/api-docs/**",
             "/api-docs",
             "/webjars/**",
-            // H2 Console (dev)
-            "/h2-console/**",
             // Actuator health
             "/actuator/health",
             // Ficheiros estáticos (UI web)
@@ -70,11 +67,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
+    public DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+        // 1. Usa o construtor que mencionaste (que recebe o PasswordEncoder)
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(passwordEncoder);
+        // 2. Define o UserDetailsService via setter (obrigatório para o login funcionar)
+        authProvider.setUserDetailsService(userDetailsService);
+
+        return authProvider;
     }
 
     @Bean
@@ -88,27 +87,24 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex ->
-                        ex.authenticationEntryPoint(authEntryPoint))
-
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(authEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        // Admin
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // Tudo o resto requer autenticação
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()  // ← permite tudo sem autenticação
                 )
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+//                        .anyRequest().authenticated()
+//                )
 
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin()) // H2 console
                         .referrerPolicy(referrer ->
                                 referrer.policy(
                                         ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                )
-
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                );
+//                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

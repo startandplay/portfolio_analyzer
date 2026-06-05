@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,7 +32,10 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
-    private final UserDetailsService userDetailsService;
+//    private final UserDetailsService userDetailsService;
+
+    @Autowired
+    private ObjectProvider<UserDetailsService> userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -39,9 +44,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = extractToken(request);
 
+            String path = request.getServletPath();
+            // 1. Ignorar explicitamente as rotas públicas para evitar overhead ou erros de validação
+            if (path.startsWith("/api/auth/") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")) {
+                chain.doFilter(request, response);
+                return;
+            }
+
             if (StringUtils.hasText(token) && tokenProvider.validateToken(token)) {
                 String email = tokenProvider.getEmailFromToken(token);
-                UserDetails user = userDetailsService.loadUserByUsername(email);
+                UserDetails user = userDetailsService.getIfAvailable().loadUserByUsername(email);
+//                UserDetails user = userDetailsService.loadUserByUsername(email);
 
                 if (user.isEnabled() && user.isAccountNonLocked()) {
                     UsernamePasswordAuthenticationToken auth =

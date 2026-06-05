@@ -49,6 +49,12 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
             "ORDER BY a.symbol")
     List<String> findSymbolsByPortfolioId(@Param("portfolioId") Long portfolioId);
 
+    @Query("SELECT DISTINCT a.ticker FROM Asset a " +
+            "JOIN Position p ON p.asset.id = a.id " +
+            "WHERE p.portfolio.id = :portfolioId AND p.quantity > 0 " +
+            "ORDER BY a.ticker")
+    List<String> findTickersByPortfolioId(@Param("portfolioId") Long portfolioId);
+
 
 }
 

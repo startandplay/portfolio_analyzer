@@ -1,6 +1,7 @@
 package com.analytics.portfolio.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,7 +25,7 @@ import java.time.LocalDateTime;
 @Table(name = "closed_positions", indexes = {
         @Index(name = "idx_cp_portfolio", columnList = "portfolio_id"),
         @Index(name = "idx_cp_ticker", columnList = "ticker"),
-        @Index(name = "idx_cp_position_id", columnList = "position_id", unique = true),
+        @Index(name = "idx_cp_position_id", columnList = "position_id"),
         @Index(name = "idx_cp_close_time", columnList = "close_time")
 })
 @Getter
@@ -41,14 +42,16 @@ public class ClosedPosition implements Fingerprintable {
     // ── Portfolio ──────────────────────────────────────────
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "portfolio_id", nullable = false)
-    @JsonIgnoreProperties({"transactions", "positions", "dividends", "cashFlows", "closedPositions"})
+    @JsonIgnore
     private Portfolio portfolio;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonManagedReference
+    @JoinColumn(name = "asset_id", nullable = false) // Verifique se o nome na BD coincide
+    private Asset asset;
+
     // ── Identificação ─────────────────────────────────────
-    /**
-     * ID único da posição no XTB
-     */
-    @Column(name = "position_id", unique = true, length = 50)
+    @Column(name = "position_id", length = 50)
     private String positionId;
 
     @Column(name = "instrument", length = 100)
@@ -178,7 +181,7 @@ public class ClosedPosition implements Fingerprintable {
 
     @Override
     public String generateFingerprint() {
-        return new GenerateFingerprint(positionId, openPrice, openTime, portfolio.getId()).generate();
+        return new GenerateFingerprint(positionId, openPrice, openTime, closeTime, portfolio.getId()).generate();
     }
 
     private String nullSafe(Object o) {
