@@ -93,7 +93,7 @@ public class XTBImportService {
 
         List<Transaction> allTransactions = new ArrayList<>();
         List<CashFlow> allCashFlows = new ArrayList<>();
-        List<ClosedPosition> closedPositions = new ArrayList<>();
+        List<ClosedPosition> allClosedPositions = new ArrayList<>();
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             int sheetCount = workbook.getNumberOfSheets();
@@ -110,24 +110,24 @@ public class XTBImportService {
                 switch (sheetType) {
                     case "CASH_OPERATIONS" ->
                             processCashOperationsSheet(sheet, portfolio, allTransactions, allCashFlows);
-                    case "CLOSED_POSITIONS" -> processClosedPositionsSheet(sheet, portfolio, closedPositions);
+                    case "CLOSED_POSITIONS" -> processClosedPositionsSheet(sheet, portfolio, allClosedPositions);
                     default -> log.warn("Sheet '{}' não reconhecida — ignorada", sheet.getSheetName());
                 }
             }
         }
 
         // Filtrar duplicatas de transactions
-        List<ClosedPosition> newClosedPositions = duplicateService.filterDuplicates(closedPositions, closedPositionRepository::existsByImportFingerprint);
+        List<ClosedPosition> newClosedPositions = duplicateService.filterDuplicates(allClosedPositions, closedPositionRepository::existsByImportFingerprint);
         List<Transaction> newTransactions = duplicateService.filterDuplicates(allTransactions, transactionRepository::existsByImportFingerprint);
         List<CashFlow> newCashFlows = duplicateService.filterDuplicates(allCashFlows, cashFlowRepository::existsByImportFingerprint);
 
-        int closePositionsDuplicates = closedPositions.size() - newClosedPositions.size();
+        int closePositionsDuplicates = allClosedPositions.size() - newClosedPositions.size();
         int transactionsDuplicates = allTransactions.size() - newTransactions.size();
         int cashFlowDuplicates = allCashFlows.size() - newCashFlows.size();
 
         // SALVAR NO BANCO DE DADOS
         log.info("Salvando {} transactions, {} cash flows e {} close positions no banco...",
-                newTransactions.size(), allCashFlows.size(), closedPositions.size());
+                newTransactions.size(), allCashFlows.size(), allClosedPositions.size());
 
         if (!newClosedPositions.isEmpty()) {
             closedPositionRepository.saveAll(newClosedPositions);
@@ -142,22 +142,22 @@ public class XTBImportService {
 
         // Salvar cash flows
         if (!newCashFlows.isEmpty()) {
-            cashFlowRepository.saveAll(allCashFlows);
-            log.info("{} cash flows salvos com sucesso", allCashFlows.size());
+            cashFlowRepository.saveAll(newCashFlows);
+            log.info("{} cash flows salvos com sucesso", newCashFlows.size());
         }
 
-        log.info("XTB Import concluído — {} transactions, {} cashflows, {} closed positions ({} duplicatas ignoradas)",
-                newTransactions.size(), allCashFlows.size(), newClosedPositions.size(),
+        log.info("XTB Import concluído — {} transactions, {} cashflows, {} closed positions, ({} duplicatas ignoradas)",
+                newTransactions.size(), newCashFlows.size(), newClosedPositions.size(),
                 transactionsDuplicates + closePositionsDuplicates);
 
         return ImportResult.builder()
                 .transactionsImported(newTransactions.size())
                 .transactionsDuplicate(transactionsDuplicates)
-                .cashFlowsImported(allCashFlows.size())
+                .cashFlowsImported(newCashFlows.size())
                 .cashFlowsDuplicate(cashFlowDuplicates)
                 .closedPositionsImported(newClosedPositions.size())
                 .closedPositionsDuplicate(closePositionsDuplicates)
-                .totalProcessed(allTransactions.size() + allCashFlows.size() + closedPositions.size())
+                .totalProcessed(allTransactions.size() + allCashFlows.size() + allClosedPositions.size())
                 .build();
     }
 
@@ -473,12 +473,12 @@ public class XTBImportService {
             case "buy", "stock purchase" -> TransactionType.BUY;
             case "deposit" -> TransactionType.DEPOSIT;
             case "withdrawal" -> TransactionType.WITHDRAWAL;
-            case "free funds interest" -> TransactionType.INTEREST;
             case "transfer" -> TransactionType.TRANSFER;
             case "dividend" -> TransactionType.DIVIDEND;
-            case "free funds interest tax" -> TransactionType.INTEREST_TAX;
             case "withholding tax" -> TransactionType.WITHHOLDING_TAX;
-            default -> throw new IllegalArgumentException("Tipo de transação desconhecido: " + fileType);
+            case "free funds interest" -> TransactionType.INTEREST;
+            case "free funds interest tax" -> TransactionType.INTEREST_TAX;
+            default -> throw new IllegalArgumentException("Transaction type unknown: " + fileType);
         };
     }
 
@@ -557,10 +557,10 @@ public class XTBImportService {
     private boolean isInvalidRow(Row row) {
         if (row == null) return true;
 
-        int firstCells = 6;
+        int lastCell = 6;
         int emptyCells = 0;
 
-        for (int i = 0; i < firstCells; i++) {
+        for (int i = 0; i < lastCell; i++) {
             Cell cell = row.getCell(i);
             if (cell == null || cell.getCellType() == CellType.BLANK) {
                 emptyCells++;
@@ -600,6 +600,7 @@ public class XTBImportService {
         public boolean isCashFlowTransaction() {
             return !isAssetTransaction() && (transactionId != null && !transactionId.isEmpty());
         }
+
     }
 
     /**
@@ -612,15 +613,16 @@ public class XTBImportService {
         private int transactionsDuplicate;  // Transactions duplicadas
         private int cashFlowsImported;      // CashFlows importados
         private int cashFlowsDuplicate;      // CashFlows importados
-        private int closedPositionsImported;      // CashFlows importados
-        private int closedPositionsDuplicate;      // CashFlows importados
+        private int closedPositionsImported;      // closed Positions importados
+        private int closedPositionsDuplicate;      // closed Positions importados
         private int totalProcessed;         // Total de linhas processadas
 
         public String getSummary() {
             return String.format("Processadas %d linhas " +
                             "transactions (%d novas, %d duplicatas), " +
                             "cashFlows (%d novas, %d duplicatas) cash flows" +
-                            "closePositions (%d novas, %d duplicatas) close positions",
+                            "closePositions (%d novas, %d duplicatas) close positions" +
+                            "dividends (%d novas, %d duplicatas) dividends",
                     totalProcessed, transactionsImported, transactionsDuplicate,
                     cashFlowsImported, cashFlowsDuplicate, closedPositionsImported,
                     closedPositionsDuplicate);
