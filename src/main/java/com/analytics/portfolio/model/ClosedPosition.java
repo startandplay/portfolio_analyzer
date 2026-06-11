@@ -73,13 +73,13 @@ public class ClosedPosition implements Fingerprintable {
     private String type;
 
     // ── Trade Details ──────────────────────────────────────
-    @Column(name = "volume", precision = 19, scale = 6)
+    @Column(name = "volume", precision = 19, scale = 4)
     private BigDecimal volume;
 
-    @Column(name = "open_price", precision = 19, scale = 6)
+    @Column(name = "open_price", precision = 19, scale = 4)
     private BigDecimal openPrice;
 
-    @Column(name = "close_price", precision = 19, scale = 6)
+    @Column(name = "close_price", precision = 19, scale = 4)
     private BigDecimal closePrice;
 
     @Column(name = "open_time")

@@ -36,28 +36,28 @@ public class Position {
     @Column(nullable = false)
     private BigDecimal quantity;
 
-    @Column(name = "average_buy_price", nullable = false)
+    @Column(name = "average_buy_price", precision = 19, scale = 3, nullable = false)
     private BigDecimal averageBuyPrice;
 
-    @Column(name = "current_price")
+    @Column(name = "current_price", precision = 19, scale = 3)
     private BigDecimal currentPrice;
 
-    @Column(name = "total_invested", nullable = false)
+    @Column(name = "total_invested", precision = 19, scale = 3, nullable = false)
     private BigDecimal totalInvested;
 
-    @Column(name = "current_value")
+    @Column(name = "current_value", precision = 19, scale = 3)
     private BigDecimal currentValue;
 
-    @Column(name = "unrealized_pl")
+    @Column(name = "unrealized_pl", precision = 19, scale = 3)
     private BigDecimal unrealizedPL; // Profit/Loss
 
-    @Column(name = "unrealized_pl_percentage")
+    @Column(name = "unrealized_pl_percentage", precision = 19, scale = 3)
     private BigDecimal unrealizedPLPercentage;
 
-    @Column(name = "realized_pl")
+    @Column(name = "realized_pl", precision = 19, scale = 3)
     private BigDecimal realizedPL;
 
-    @Column(name = "total_dividends_received")
+    @Column(name = "total_dividends_received", precision = 19, scale = 3)
     private BigDecimal totalDividendsReceived;
 
     @Column(name = "first_purchase_date")

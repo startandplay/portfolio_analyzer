@@ -88,10 +88,6 @@ public class Transaction  implements Fingerprintable {
         }
     }
 
-    /**
-     * Gera fingerprint único para a transação
-     * Usado para prevenir duplicatas na importação
-     */
     @Override
     public String generateFingerprint() {
         return  new GenerateFingerprint(externalId, totalAmount, transactionDate, null, portfolio.getId()).generate();

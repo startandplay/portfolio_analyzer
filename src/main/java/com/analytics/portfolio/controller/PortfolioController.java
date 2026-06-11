@@ -151,16 +151,6 @@ public class PortfolioController {
         return ResponseEntity.ok(transactions);
     }
 
-    @GetMapping("/{id}/dividends")
-    @Transactional(readOnly = true)
-    @Operation(summary = "Get all dividends")
-    public ResponseEntity<List<Dividend>> getDividends(@PathVariable Long id) {
-        List<Dividend> dividends = dividendRepository
-                .findByPortfolioIdOrderByPaymentDateDesc(id);
-        return ResponseEntity.ok(dividends);
-    }
-
-
     @PostMapping(value = "/{id}/import/xtb", consumes = "multipart/form-data")
     @Operation(
             summary = "Import transactions and cash flows from XTB Excel file",
@@ -243,7 +233,8 @@ public class PortfolioController {
     public record RecalculateResult(
             int positionsCalculated,
             String message
-    ) {}
+    ) {
+    }
 
 
     // DTO para resultado de importação
