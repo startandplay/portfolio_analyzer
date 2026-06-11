@@ -22,4 +22,7 @@ public interface DividendRepository extends JpaRepository<Dividend, Long> {
     
     @Query("SELECT SUM(d.netAmount) FROM Dividend d WHERE d.portfolio.id = :portfolioId")
     java.math.BigDecimal getTotalDividendsByPortfolioId(@Param("portfolioId") Long portfolioId);
+
+    // Verificar se existe por fingerprint (prevenir duplicados)
+    boolean existsByImportFingerprint(String fingerprint);
 }

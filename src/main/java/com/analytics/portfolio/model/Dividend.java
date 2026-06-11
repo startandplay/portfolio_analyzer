@@ -16,9 +16,8 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class
-Dividend {
+@Builder(toBuilder = true)
+public class Dividend implements Fingerprintable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,24 +34,27 @@ Dividend {
     private Asset asset;
 
     @Column(name = "payment_date", nullable = false)
-    private LocalDate paymentDate;
+    private LocalDateTime paymentDate;
 
     @Column(name = "ex_dividend_date")
     private LocalDate exDividendDate;
 
-    @Column(name = "amount_per_share", nullable = false)
+    @Column(name = "amount_per_share", precision = 6, scale = 4, nullable = false)
     private BigDecimal amountPerShare;
 
     @Column(name = "shares_owned", nullable = false)
     private BigDecimal sharesOwned;
 
-    @Column(name = "total_amount", nullable = false)
+    @Column(name = "total_amount", precision = 6, scale = 3, nullable = false)
     private BigDecimal totalAmount;
 
     @Column(name = "tax_withheld")
     private BigDecimal taxWithheld;
 
-    @Column(name = "net_amount")
+    @Column(name = "tax_percentage", nullable = false)
+    private BigDecimal taxPercentage;
+
+    @Column(name = "net_amount" , precision = 6, scale = 3)
     private BigDecimal netAmount;
 
     private String currency;
@@ -68,6 +70,9 @@ Dividend {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "import_fingerprint", unique = true, length = 64)
+    private String importFingerprint;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -80,5 +85,15 @@ Dividend {
                 netAmount = netAmount.subtract(taxWithheld);
             }
         }
+
+        if (importFingerprint == null) {
+            importFingerprint = generateFingerprint();
+        }
+
+    }
+
+    @Override
+    public String generateFingerprint() {
+        return new GenerateFingerprint(externalId, amountPerShare, paymentDate, null, portfolio.getId()).generate();
     }
 }
