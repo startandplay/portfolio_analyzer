@@ -2,7 +2,6 @@ package com.analytics.portfolio.repository;
 
 import com.analytics.portfolio.enums.TransactionType;
 import com.analytics.portfolio.model.CashFlow;
-import com.analytics.portfolio.model.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -54,39 +53,81 @@ public interface CashFlowRepository extends JpaRepository<CashFlow, Long> {
             @Param("endDate") LocalDateTime endDate
     );
 
-    /**
-     * Total de depósitos
-     */
+    // ── Totais simples ────────────────────────────────────────────
+
     @Query("SELECT COALESCE(SUM(cf.amount), 0) FROM CashFlow cf " +
             "WHERE cf.portfolio.id = :portfolioId AND cf.type = 'DEPOSIT'")
     BigDecimal getTotalDeposits(@Param("portfolioId") Long portfolioId);
 
-    /**
-     * Total de saques (retorna valor positivo)
-     */
     @Query("SELECT COALESCE(SUM(ABS(cf.amount)), 0) FROM CashFlow cf " +
             "WHERE cf.portfolio.id = :portfolioId AND cf.type = 'WITHDRAWAL'")
     BigDecimal getTotalWithdrawals(@Param("portfolioId") Long portfolioId);
 
-    /**
-     * Total de impostos pagos (retorna valor positivo)
-     */
+    @Query("SELECT COALESCE(SUM(cf.amount), 0) FROM CashFlow cf " +
+            "WHERE cf.portfolio.id = :portfolioId AND cf.type = 'TRANSFER'")
+    BigDecimal getTotalTransfers(@Param("portfolioId") Long portfolioId);
+
     @Query("SELECT COALESCE(SUM(ABS(cf.amount)), 0) FROM CashFlow cf " +
             "WHERE cf.portfolio.id = :portfolioId AND cf.type IN ('TAX', 'DIVIDEND_TAX')")
     BigDecimal getTotalTaxesPaid(@Param("portfolioId") Long portfolioId);
 
-    /**
-     * Total de taxas pagas (retorna valor positivo)
-     */
     @Query("SELECT COALESCE(SUM(ABS(cf.amount)), 0) FROM CashFlow cf " +
             "WHERE cf.portfolio.id = :portfolioId AND cf.type = 'FEE'")
     BigDecimal getTotalFeesPaid(@Param("portfolioId") Long portfolioId);
 
-    // Verificar se existe por fingerprint (prevenir duplicatas)
+    // ── Saldo líquido de movimentos de caixa ─────────────────────
+
+    /**
+     * Movimento líquido = depósitos + levantamentos (os levantamentos
+     * já têm sinal negativo na tabela — a soma reflecte o saldo real).
+     */
+    @Query("SELECT COALESCE(SUM(cf.amount), 0) FROM CashFlow cf " +
+            "WHERE cf.portfolio.id = :portfolioId " +
+            "AND cf.type IN ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER')")
+    BigDecimal getNetCashMovement(@Param("portfolioId") Long portfolioId);
+
+    // ── Resumo agrupado por tipo ──────────────────────────────────
+
+    /**
+     * Agrega cash flows por tipo.
+     * Devolve: [type (String), totalAmount, count]
+     */
+    @Query("SELECT CAST(cf.type AS string), SUM(cf.amount), COUNT(cf) " +
+            "FROM CashFlow cf " +
+            "WHERE cf.portfolio.id = :portfolioId " +
+            "GROUP BY cf.type " +
+            "ORDER BY SUM(cf.amount) DESC")
+    List<Object[]> getCashFlowSummaryByType(@Param("portfolioId") Long portfolioId);
+
+    /**
+     * Devolve transações filtradas por lista de tipos, ordenadas por data desc.
+     */
+    @Query("SELECT cf FROM CashFlow cf " +
+            "WHERE cf.portfolio.id = :portfolioId " +
+            "AND cf.type IN :types " +
+            "ORDER BY cf.flowDate DESC")
+    List<CashFlow> findByPortfolioIdAndTypes(
+            @Param("portfolioId") Long portfolioId,
+            @Param("types") List<TransactionType> types
+    );
+
+    /**
+     * Soma total de um conjunto de tipos para um portfólio.
+     * Útil para calcular gross dividends, gross interest, etc.
+     */
+    @Query("SELECT COALESCE(SUM(cf.amount), 0) FROM CashFlow cf " +
+            "WHERE cf.portfolio.id = :portfolioId " +
+            "AND cf.type IN :types")
+    BigDecimal sumAmountByPortfolioAndTypes(
+            @Param("portfolioId") Long portfolioId,
+            @Param("types") List<TransactionType> types
+    );
+
+
+    // ── Duplicados ────────────────────────────────────────────────
+
     boolean existsByImportFingerprint(String fingerprint);
 
-    // Buscar por fingerprint
-    Optional<Transaction> findByImportFingerprint(String fingerprint);
-
+    Optional<CashFlow> findByImportFingerprint(String fingerprint);
 
 }
