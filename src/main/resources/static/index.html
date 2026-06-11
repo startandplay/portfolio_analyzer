@@ -1,0 +1,2452 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Start And Play</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg:        #0d0f14;
+            --bg2:       #13161e;
+            --bg3:       #1a1d27;
+            --border:    #252836;
+            --accent:    #4ecca3;
+            --accent2:   #7c6af7;
+            --danger:    #f05d5d;
+            --warn:      #f0a05d;
+            --text:      #e8eaf0;
+            --text2:     #8b8fa8;
+            --text3:     #555870;
+            --mono:      'IBM Plex Mono', monospace;
+            --sans:      'IBM Plex Sans', sans-serif;
+            --radius:    6px;
+            --transition: 180ms ease;
+        }
+
+        * { box-sizing:border-box; margin:0; padding:0; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ── Sidebar ── */
+        #sidebar {
+            width: 220px;
+            min-height: 100vh;
+            background: var(--bg2);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 10;
+        }
+
+        .logo {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .logo-mark {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--accent);
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+        .logo-sub {
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 3px;
+            letter-spacing: .05em;
+        }
+
+        nav { flex: 1; padding: 12px 0; }
+
+        .nav-section {
+            padding: 16px 20px 6px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 20px;
+            font-size: 13px;
+            color: var(--text2);
+            cursor: pointer;
+            border-left: 2px solid transparent;
+            transition: var(--transition);
+        }
+        .nav-item:hover { color: var(--text); background: var(--bg3); }
+        .nav-item.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: rgba(78,204,163,.06);
+        }
+        .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text3);
+        }
+        #user-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .avatar {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: var(--accent2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600; color: #fff;
+            flex-shrink: 0;
+        }
+        .user-info { flex: 1; overflow: hidden; }
+        .user-name { font-size: 12px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-role { font-size: 10px; color: var(--text3); }
+        #logout-btn {
+            background: none; border: none; cursor: pointer;
+            color: var(--text3); font-size: 15px; padding: 2px;
+            transition: color var(--transition);
+        }
+        #logout-btn:hover { color: var(--danger); }
+
+        /* ── Main ── */
+        #main {
+            margin-left: 220px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 52px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 28px;
+            gap: 12px;
+            background: var(--bg);
+            position: sticky; top: 0; z-index: 5;
+        }
+        .page-title { font-size: 14px; font-weight: 500; color: var(--text); }
+        .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--text3);
+            transition: background var(--transition);
+        }
+        .status-dot.ok { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+        .status-text { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+        #content { padding: 28px; flex: 1; }
+
+        /* ── Panels ── */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Forms ── */
+        .form-grid { display: grid; gap: 14px; }
+        .form-grid-2 { grid-template-columns: 1fr 1fr; }
+
+        .field label {
+            display: block;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text3);
+            margin-bottom: 6px;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+        .field input, .field select, .field textarea {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 9px 12px;
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: 13px;
+            outline: none;
+            transition: border-color var(--transition);
+        }
+        .field input:focus, .field select:focus {
+            border-color: var(--accent);
+        }
+        .field textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: var(--mono);
+            font-size: 12px;
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            border: none;
+            border-radius: var(--radius);
+            font-family: var(--sans);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity var(--transition), transform var(--transition);
+        }
+        .btn:hover { opacity: .85; }
+        .btn:active { transform: scale(.98); }
+        .btn-primary  { background: var(--accent);  color: #0d0f14; }
+        .btn-secondary{ background: var(--bg3);      color: var(--text); border: 1px solid var(--border); }
+        .btn-danger   { background: var(--danger);   color: #fff; }
+        .btn-ghost    { background: transparent;     color: var(--accent); border: 1px solid var(--accent); }
+        .btn-sm       { padding: 5px 12px; font-size: 12px; }
+        .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* ── Response viewer ── */
+        .response-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            font-family: var(--mono);
+            font-size: 12px;
+            line-height: 1.65;
+            color: var(--text2);
+            min-height: 80px;
+            max-height: 320px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .response-box .ok  { color: var(--accent); }
+        .response-box .err { color: var(--danger); }
+        .response-box .key { color: var(--accent2); }
+        .response-box .str { color: var(--warn); }
+        .response-box .num { color: #79c0ff; }
+        .response-box .bool{ color: var(--danger); }
+
+        /* ── Tables ── */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th {
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text3);
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text2);
+            vertical-align: middle;
+        }
+        tr:hover td { background: var(--bg3); }
+        td:first-child, th:first-child { color: var(--text); }
+
+        /* ── Badges ── */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+        .badge-green  { background: rgba(78,204,163,.15); color: var(--accent); }
+        .badge-purple { background: rgba(124,106,247,.15); color: var(--accent2); }
+        .badge-red    { background: rgba(240, 93, 93,.15); color: var(--danger); }
+        .badge-gray   { background: rgba(139,143,168,.1);  color: var(--text3); }
+
+        /* ── Alert ── */
+        .alert {
+            padding: 10px 14px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            margin-bottom: 14px;
+            display: none;
+        }
+        .alert.show { display: block; }
+        .alert-ok  { background: rgba(78,204,163,.1);  border: 1px solid rgba(78,204,163,.3);  color: var(--accent); }
+        .alert-err { background: rgba(240, 93, 93,.1); border: 1px solid rgba(240, 93, 93,.3); color: var(--danger); }
+
+        /* ── Token display ── */
+        .token-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 12px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text3);
+            word-break: break-all;
+            line-height: 1.6;
+        }
+        .token-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 6px;
+            margin-top: 12px;
+        }
+
+        /* ── Auth wall ── */
+        #auth-wall {
+            position: fixed; inset: 0;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .auth-box {
+            width: 380px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 36px;
+        }
+        .auth-logo {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .auth-logo::before {
+            content: '';
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+        .auth-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 24px;
+            background: var(--bg3);
+            border-radius: var(--radius);
+            padding: 3px;
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: var(--text3);
+            transition: var(--transition);
+        }
+        .auth-tab.active {
+            background: var(--bg2);
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* ── Misc ── */
+        .flex { display: flex; }
+        .gap-10 { gap: 10px; }
+        .gap-14 { gap: 14px; }
+        .mt-12 { margin-top: 12px; }
+        .mt-16 { margin-top: 16px; }
+        .mt-20 { margin-top: 20px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .label-text { font-size: 12px; color: var(--text2); }
+        .mono { font-family: var(--mono); font-size: 12px; }
+        hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text3);
+            font-size: 13px;
+        }
+        .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+        /* scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg2); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* ════════════════════════════════════════
+           METRICS PAGE — specific styles
+           ════════════════════════════════════════ */
+
+        /* KPI grid — 4 cols on wide, 2 on narrow */
+        .metrics-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 1100px) {
+            .metrics-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .kpi-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color var(--transition);
+        }
+        .kpi-card:hover { border-color: var(--accent); }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--accent);
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+        .kpi-card:hover::before { opacity: 1; }
+        .kpi-card.positive::before { background: var(--accent); opacity: 1; }
+        .kpi-card.negative::before { background: var(--danger); opacity: 1; }
+        .kpi-card.neutral::before  { background: var(--accent2); opacity: 1; }
+        .kpi-card.warn::before     { background: var(--warn); opacity: 1; }
+
+        .kpi-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 10px;
+        }
+        .kpi-value {
+            font-family: var(--mono);
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--text);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+        .kpi-value.positive { color: var(--accent); }
+        .kpi-value.negative { color: var(--danger); }
+        .kpi-value.neutral  { color: var(--accent2); }
+        .kpi-value.warn     { color: var(--warn); }
+
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--text3);
+            font-family: var(--mono);
+        }
+        .kpi-icon {
+            position: absolute;
+            top: 16px; right: 16px;
+            font-size: 20px;
+            opacity: .15;
+        }
+
+        /* Section headers inside metrics */
+        .metrics-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin: 24px 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .metrics-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Detail rows — 2-col grid */
+        .metrics-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        @media (max-width: 900px) {
+            .metrics-detail-grid { grid-template-columns: 1fr; }
+        }
+
+        .detail-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .detail-row-label {
+            font-size: 12px;
+            color: var(--text3);
+            flex-shrink: 0;
+        }
+        .detail-row-value {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text);
+            text-align: right;
+        }
+        .detail-row-value.positive { color: var(--accent); }
+        .detail-row-value.negative { color: var(--danger); }
+        .detail-row-value.muted    { color: var(--text3); }
+
+        /* Progress bar for drawdown / weight */
+        .progress-bar-wrap {
+            width: 100%;
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--accent);
+            transition: width .5s ease;
+        }
+        .progress-bar-fill.danger { background: var(--danger); }
+        .progress-bar-fill.warn   { background: var(--warn); }
+
+        /* Skeleton loader */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg3) 25%, var(--border) 50%, var(--bg3) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 4px;
+        }
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skeleton-line {
+            height: 14px;
+            margin-bottom: 8px;
+        }
+        .skeleton-value {
+            height: 28px;
+            width: 60%;
+            margin-bottom: 6px;
+        }
+
+        /* Portfolio selector bar */
+        .metrics-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+            padding: 14px 18px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .metrics-selector label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text3);
+            white-space: nowrap;
+        }
+        .metrics-selector select {
+            flex: 1;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 7px 10px;
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            max-width: 260px;
+        }
+        .metrics-selector select:focus { border-color: var(--accent); }
+
+        /* Last updated chip */
+        .last-updated {
+            font-size: 10px;
+            font-family: var(--mono);
+            color: var(--text3);
+            margin-left: auto;
+        }
+
+        /* Gauge — simple circular progress for ratios */
+        .gauge-wrap {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .gauge-circle {
+            width: 48px; height: 48px;
+            flex-shrink: 0;
+        }
+        .gauge-info { flex: 1; }
+        .gauge-label { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+        .gauge-val {
+            font-family: var(--mono);
+            font-size: 16px;
+            color: var(--text);
+        }
+        .gauge-val.positive { color: var(--accent); }
+        .gauge-val.negative { color: var(--danger); }
+
+        /* 3-col risk grid */
+        .risk-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        @media (max-width: 960px) {
+            .risk-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .risk-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            text-align: center;
+        }
+        .risk-card-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 10px;
+        }
+        .risk-card-value {
+            font-family: var(--mono);
+            font-size: 20px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .risk-card-value.positive { color: var(--accent); }
+        .risk-card-value.negative { color: var(--danger); }
+        .risk-card-value.warn     { color: var(--warn); }
+        .risk-card-desc {
+            font-size: 10px;
+            color: var(--text3);
+        }
+
+        /* Divider with label */
+        .divider-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0 14px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+        .divider-label::before,
+        .divider-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ════════════════════════════════════════
+           INCOME PAGE — specific styles
+           ════════════════════════════════════════ */
+
+        /* Top summary strip — 3 big numbers */
+        .income-summary-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 900px) {
+            .income-summary-strip { grid-template-columns: 1fr; }
+        }
+
+        .income-summary-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            position: relative;
+            overflow: hidden;
+        }
+        .income-summary-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+        }
+        .income-summary-card.dividends::after { background: var(--accent); }
+        .income-summary-card.interest::after  { background: var(--accent2); }
+        .income-summary-card.total::after     { background: var(--warn); }
+
+        .income-summary-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 12px;
+        }
+        .income-summary-value {
+            font-family: var(--mono);
+            font-size: 28px;
+            font-weight: 500;
+            color: var(--accent);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        .income-summary-value.purple { color: var(--accent2); }
+        .income-summary-value.warn   { color: var(--warn); }
+
+        .income-summary-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 10px;
+        }
+        .income-breakdown-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text3);
+            font-family: var(--mono);
+        }
+        .income-breakdown-row span:last-child { color: var(--text2); }
+        .income-breakdown-row.tax span:last-child { color: var(--danger); }
+
+        /* Tab switcher inside income page */
+        .income-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0;
+        }
+        .income-tab {
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text3);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: var(--transition);
+            letter-spacing: .04em;
+        }
+        .income-tab:hover { color: var(--text); }
+        .income-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* Dividends by asset table — extra columns */
+        .tbl-yield {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent2);
+        }
+        .tbl-tax {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--danger);
+        }
+        .tbl-net {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .tbl-gross {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text2);
+        }
+
+        /* Cash flow type badge colors */
+        .badge-deposit    { background: rgba(78,204,163,.15);  color: var(--accent); }
+        .badge-withdrawal { background: rgba(240,93,93,.15);   color: var(--danger); }
+        .badge-transfer   { background: rgba(124,106,247,.15); color: var(--accent2); }
+        .badge-interest   { background: rgba(240,160,93,.15);  color: var(--warn); }
+
+        /* Cash flow summary mini-cards */
+        .cf-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .cf-summary-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+        }
+        .cf-summary-type {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 6px;
+        }
+        .cf-summary-amount {
+            font-family: var(--mono);
+            font-size: 15px;
+            color: var(--text);
+        }
+        .cf-summary-count {
+            font-size: 10px;
+            color: var(--text3);
+            margin-top: 3px;
+            font-family: var(--mono);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════ AUTH WALL ══════════════════ -->
+<div id="auth-wall">
+    <div class="auth-box">
+        <div class="auth-logo">Start and Play</div>
+        <div class="auth-tabs">
+            <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+            <div class="auth-tab" onclick="switchAuthTab('register')">Register</div>
+        </div>
+
+        <div id="auth-alert" class="alert"></div>
+
+        <!-- Login -->
+        <div id="tab-login">
+            <div class="form-grid" style="gap:12px;">
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="john@example.com"/>
+                </div>
+                <div class="field">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••"
+                           onkeydown="if(event.key==='Enter') doLogin()"/>
+                </div>
+            </div>
+            <button class="btn btn-primary mt-16" style="width:100%;" onclick="doLogin()">
+                Sign in
+            </button>
+        </div>
+
+        <!-- Register -->
+        <div id="tab-register" style="display:none;">
+            <div class="form-grid" style="gap:12px;">
+                <div class="field">
+                    <label>Username</label>
+                    <input type="text" id="reg-username" placeholder="johndoe"/>
+                </div>
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" id="reg-email" placeholder="john@example.com"/>
+                </div>
+                <div class="field">
+                    <label>Password <span style="color:var(--text3);font-size:10px;">(8+ chars, maiúscula, número, @#$%)</span></label>
+                    <input type="password" id="reg-password" placeholder="SecurePass123!"/>
+                </div>
+                <div class="field">
+                    <label>First name (opcional)</label>
+                    <input type="text" id="reg-firstname" placeholder="John"/>
+                </div>
+            </div>
+            <button class="btn btn-primary mt-16" style="width:100%;" onclick="doRegister()">
+                Create account
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<div id="sidebar">
+    <div class="logo">
+        <div class="logo-mark">Start and Play</div>
+        <div class="logo-sub">v1.0.0 — dev</div>
+    </div>
+
+    <nav>
+        <div class="nav-section">Overview</div>
+        <div class="nav-item active" onclick="nav('dashboard')">
+            <span class="nav-icon">◈</span> Dashboard
+        </div>
+
+        <div class="nav-section">Portfolio</div>
+        <div class="nav-item" onclick="nav('portfolios')">
+            <span class="nav-icon">⬡</span> Portfolios
+        </div>
+        <div class="nav-item" onclick="nav('metrics')">
+            <span class="nav-icon">▦</span> Metrics
+        </div>
+        <div class="nav-item" onclick="nav('transactions')">
+            <span class="nav-icon">⇄</span> Transactions
+        </div>
+        <div class="nav-item" onclick="nav('close-positions')">
+            <span class="nav-icon">☒</span> Close Positions
+        </div>
+        <div class="nav-item" onclick="nav('positions')">
+            <span class="nav-icon">◎</span> Positions
+        </div>
+        <div class="nav-item" onclick="nav('cashflows')">
+            <span class="nav-icon">⬡</span> Cash Flows
+        </div>
+        <div class="nav-item" onclick="nav('income')">
+            <span class="nav-icon">◆</span> Income
+        </div>
+
+        <div class="nav-section">Market</div>
+        <div class="nav-item" onclick="nav('marketdata')">
+            <span class="nav-icon">↗</span> Market Data
+        </div>
+        <div class="nav-item" onclick="nav('assets')">
+            <span class="nav-icon">◇</span> Assets
+        </div>
+
+        <div class="nav-section">Tools</div>
+        <div class="nav-item" onclick="nav('import')">
+            <span class="nav-icon">⊕</span> Import XTB
+        </div>
+        <div class="nav-item" onclick="nav('apitester')">
+            <span class="nav-icon">⌥</span> API Tester
+        </div>
+        <div class="nav-item" onclick="nav('tokens')">
+            <span class="nav-icon">◐</span> Auth Tokens
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div id="user-badge">
+            <div class="avatar" id="avatar-initials">?</div>
+            <div class="user-info">
+                <div class="user-name" id="sidebar-username">–</div>
+                <div class="user-role" id="sidebar-role">–</div>
+            </div>
+            <button id="logout-btn" onclick="doLogout()" title="Logout">⏻</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<div id="main">
+    <div class="topbar">
+        <span class="page-title" id="topbar-title">Dashboard</span>
+        <div class="topbar-right">
+            <div class="status-dot" id="status-dot"></div>
+            <span class="status-text" id="status-text">disconnected</span>
+        </div>
+    </div>
+
+    <div id="content">
+
+        <!-- ── DASHBOARD ── -->
+        <div class="panel active" id="panel-dashboard">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title">Auth status</div>
+                    <div style="font-size:13px; color:var(--text2); line-height:1.8;">
+                        <div>Email: <strong id="d-email" style="color:var(--text);">–</strong></div>
+                        <div>Roles: <span id="d-roles">–</span></div>
+                        <div>Token: <span id="d-token-status" class="badge badge-gray">none</span></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Quick actions</div>
+                    <div class="flex gap-10" style="flex-wrap:wrap;">
+                        <button class="btn btn-secondary btn-sm" onclick="nav('portfolios'); loadPortfolios()">Load portfolios</button>
+                        <button class="btn btn-secondary btn-sm" onclick="nav('marketdata')">Market quote</button>
+                        <button class="btn btn-secondary btn-sm" onclick="nav('tokens')">View tokens</button>
+                        <button class="btn btn-secondary btn-sm" onclick="pingHealth()">Health check</button>
+                    </div>
+                    <div id="health-result" class="response-box mt-12" style="min-height:40px; display:none;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Access token decoded</div>
+                <div id="jwt-decoded" class="response-box" style="min-height:60px;">Login to see token contents…</div>
+            </div>
+        </div>
+
+        <!-- ── PORTFOLIOS ── -->
+        <div class="panel" id="panel-portfolios">
+            <div class="card">
+                <div class="card-title">My portfolios</div>
+                <div class="flex gap-10" style="margin-bottom:16px;">
+                    <button class="btn btn-primary btn-sm" onclick="loadPortfolios()">↻ Refresh</button>
+                    <button class="btn btn-ghost btn-sm" onclick="toggleCreate('portfolio-create')">+ New portfolio</button>
+                </div>
+
+                <div id="portfolio-create" style="display:none; background:var(--bg3); border-radius:var(--radius); padding:16px; margin-bottom:16px; border:1px solid var(--border);">
+                    <div class="form-grid form-grid-2">
+                        <div class="field">
+                            <label>Name</label>
+                            <input type="text" id="p-name" placeholder="My Portfolio"/>
+                        </div>
+                        <div class="field">
+                            <label>Description (opcional)</label>
+                            <input type="text" id="p-desc" placeholder="Long term investments"/>
+                        </div>
+                    </div>
+                    <div class="flex gap-10 mt-12">
+                        <button class="btn btn-primary btn-sm" onclick="createPortfolio()">Create</button>
+                        <button class="btn btn-secondary btn-sm" onclick="toggleCreate('portfolio-create')">Cancel</button>
+                    </div>
+                </div>
+
+                <div id="portfolio-list"><div class="empty-state"><div class="icon">⬡</div>Click refresh to load portfolios</div></div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ── METRICS ──
+             ══════════════════════════════════════ -->
+        <div class="panel" id="panel-metrics">
+
+            <!-- Selector bar -->
+            <div class="metrics-selector">
+                <label>Portfolio</label>
+                <select id="met-portfolio-id" onchange="loadMetrics()">
+                    <option value="">Select portfolio…</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="loadMetrics()">↻ Refresh</button>
+                <span class="last-updated" id="met-last-updated"></span>
+            </div>
+
+            <!-- Loading / error state -->
+            <div id="met-loading" style="display:none;">
+                <div class="metrics-kpi-grid">
+                    <div class="kpi-card" style="height:90px;">
+                        <div class="skeleton skeleton-line" style="width:50%; margin-bottom:14px;"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                    <div class="kpi-card" style="height:90px;">
+                        <div class="skeleton skeleton-line" style="width:50%; margin-bottom:14px;"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                    <div class="kpi-card" style="height:90px;">
+                        <div class="skeleton skeleton-line" style="width:50%; margin-bottom:14px;"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                    <div class="kpi-card" style="height:90px;">
+                        <div class="skeleton skeleton-line" style="width:50%; margin-bottom:14px;"></div>
+                        <div class="skeleton skeleton-value"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="met-error" class="alert alert-err" style="display:none;"></div>
+
+            <!-- Main content (hidden until data loads) -->
+            <div id="met-content" style="display:none;">
+
+                <!-- ── KPI Row 1 — Value & Return ── -->
+                <div class="metrics-kpi-grid" id="met-kpi-row1"></div>
+
+                <!-- ── KPI Row 2 — Risk & Dividends ── -->
+                <div class="metrics-kpi-grid" id="met-kpi-row2"></div>
+
+                <!-- ── Detail sections ── -->
+                <div class="metrics-detail-grid">
+
+                    <!-- Returns breakdown -->
+                    <div class="detail-card">
+                        <div style="font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-bottom:4px;">Returns</div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Total Return</span>
+                            <span class="detail-row-value" id="det-totalReturn">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Total Return %</span>
+                            <span class="detail-row-value" id="det-totalReturnPct">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Annualized Return</span>
+                            <span class="detail-row-value" id="det-annualized">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">YTD Return</span>
+                            <span class="detail-row-value" id="det-ytd">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Monthly Return</span>
+                            <span class="detail-row-value" id="det-monthly">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">TWR</span>
+                            <span class="detail-row-value" id="det-twr">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">MWR (IRR)</span>
+                            <span class="detail-row-value" id="det-mwr">–</span>
+                        </div>
+                    </div>
+
+                    <!-- Capital breakdown -->
+                    <div class="detail-card">
+                        <div style="font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-bottom:4px;">Capital</div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Total Invested</span>
+                            <span class="detail-row-value" id="det-invested">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Current Value</span>
+                            <span class="detail-row-value" id="det-current">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Cash Balance</span>
+                            <span class="detail-row-value" id="det-cash">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Total Value</span>
+                            <span class="detail-row-value" id="det-total">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Unrealized Gains</span>
+                            <span class="detail-row-value" id="det-unrealized">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Realized Gains</span>
+                            <span class="detail-row-value" id="det-realized">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Total Gains</span>
+                            <span class="detail-row-value" id="det-totalGains">–</span>
+                        </div>
+                    </div>
+
+                    <!-- Dividends -->
+                    <div class="detail-card">
+                        <div style="font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-bottom:4px;">Dividends</div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Total Received</span>
+                            <span class="detail-row-value positive" id="det-divTotal">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Dividend Yield</span>
+                            <span class="detail-row-value" id="det-divYield">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Annualized Yield</span>
+                            <span class="detail-row-value" id="det-divAnnualized">–</span>
+                        </div>
+                        <hr style="margin:8px 0;">
+                        <div style="font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-bottom:4px; margin-top:4px;">Costs</div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Total Fees</span>
+                            <span class="detail-row-value negative" id="det-fees">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Total Taxes</span>
+                            <span class="detail-row-value negative" id="det-taxes">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Net Return</span>
+                            <span class="detail-row-value" id="det-netReturn">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Net Return %</span>
+                            <span class="detail-row-value" id="det-netReturnPct">–</span>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio info -->
+                    <div class="detail-card">
+                        <div style="font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-bottom:4px;">Portfolio Info</div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Name</span>
+                            <span class="detail-row-value" id="det-name">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Positions</span>
+                            <span class="detail-row-value" id="det-positions">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Assets</span>
+                            <span class="detail-row-value" id="det-assets">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Days Invested</span>
+                            <span class="detail-row-value" id="det-days">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">First Investment</span>
+                            <span class="detail-row-value muted" id="det-firstInv">–</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Last Updated</span>
+                            <span class="detail-row-value muted" id="det-lastUpd">–</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Risk Metrics ── -->
+                <div class="divider-label">Risk &amp; Performance</div>
+                <div class="risk-grid" id="met-risk-grid"></div>
+
+            </div><!-- /met-content -->
+        </div><!-- /panel-metrics -->
+
+        <!-- ── TRANSACTIONS ── -->
+        <div class="panel" id="panel-transactions">
+            <div class="card">
+                <div class="card-title">Transactions</div>
+                <div class="flex gap-10" style="margin-bottom:14px; flex-wrap:wrap;">
+                    <div class="field" style="margin:0;">
+                        <select id="tx-portfolio-id" style="padding:6px 10px; font-size:12px; width:180px;">
+                            <option value="">Select portfolio…</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="loadTransactions()">Load</button>
+                </div>
+                <div id="transactions-list"><div class="empty-state"><div class="icon">⇄</div>Select a portfolio and load transactions</div></div>
+            </div>
+        </div>
+
+        <!-- ── POSITIONS ── -->
+        <div class="panel" id="panel-positions">
+            <div class="card">
+                <div class="card-title">Positions</div>
+                <div class="flex gap-10" style="margin-bottom:14px;">
+                    <div class="field" style="margin:0;">
+                        <select id="pos-portfolio-id" style="padding:6px 10px; font-size:12px; width:180px;">
+                            <option value="">Select portfolio…</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="loadPositions()">Load</button>
+                    <button class="btn btn-secondary btn-sm" onclick="recalcPositions()">↻ Recalculate</button>
+                </div>
+                <div id="positions-list"><div class="empty-state"><div class="icon">◎</div>Select a portfolio to see positions</div></div>
+            </div>
+        </div>
+
+        <!-- ── CLOSE POSITIONS ── -->
+        <div class="panel" id="panel-close-positions">
+            <div class="card">
+                <div class="card-title">Close Positions</div>
+                <div class="flex gap-10" style="margin-bottom:14px;">
+                    <div class="field" style="margin:0;">
+                        <select id="cp-portfolio-id" style="padding:6px 10px; font-size:12px; width:180px;">
+                            <option value="">Select portfolio…</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="loadClosePositions()">Load</button>
+                </div>
+                <div id="close-positions-list"><div class="empty-state"><div class="icon">◎</div>Select a portfolio to see positions</div></div>
+            </div>
+        </div>
+
+        <!-- ── CASH FLOWS ── -->
+        <div class="panel" id="panel-cashflows">
+            <div class="card">
+                <div class="card-title">Cash Flows</div>
+                <div class="flex gap-10" style="margin-bottom:14px;">
+                    <div class="field" style="margin:0;">
+                        <select id="cf-portfolio-id" style="padding:6px 10px; font-size:12px; width:180px;">
+                            <option value="">Select portfolio…</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="loadCashFlows()">Load</button>
+                </div>
+                <div id="cashflows-list"><div class="empty-state"><div class="icon">⬡</div>Select a portfolio to see cash flows</div></div>
+            </div>
+        </div>
+
+        <!-- ── INCOME ── -->
+        <div class="panel" id="panel-income">
+
+            <!-- Selector bar -->
+            <div class="metrics-selector">
+                <label>Portfolio</label>
+                <select id="inc-portfolio-id" onchange="loadIncome()">
+                    <option value="">Select portfolio…</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="loadIncome()">↻ Refresh</button>
+                <span class="last-updated" id="inc-last-updated"></span>
+            </div>
+
+            <div id="inc-error" class="alert alert-err" style="display:none;"></div>
+
+            <div id="inc-content" style="display:none;">
+
+                <!-- ── Summary strip ── -->
+                <div class="income-summary-strip">
+                    <div class="income-summary-card dividends">
+                        <div class="income-summary-label">Dividends</div>
+                        <div class="income-summary-value" id="inc-div-net">–</div>
+                        <div class="income-summary-breakdown">
+                            <div class="income-breakdown-row">
+                                <span>Gross</span><span id="inc-div-gross">–</span>
+                            </div>
+                            <div class="income-breakdown-row tax">
+                                <span>Withholding Tax</span><span id="inc-div-wht">–</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="income-summary-card interest">
+                        <div class="income-summary-label">Interest</div>
+                        <div class="income-summary-value purple" id="inc-int-net">–</div>
+                        <div class="income-summary-breakdown">
+                            <div class="income-breakdown-row">
+                                <span>Gross</span><span id="inc-int-gross">–</span>
+                            </div>
+                            <div class="income-breakdown-row tax">
+                                <span>Tax</span><span id="inc-int-tax">–</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="income-summary-card total">
+                        <div class="income-summary-label">Total Net Income</div>
+                        <div class="income-summary-value warn" id="inc-total-net">–</div>
+                        <div class="income-summary-breakdown">
+                            <div class="income-breakdown-row">
+                                <span>Cash in</span><span id="inc-deposits">–</span>
+                            </div>
+                            <div class="income-breakdown-row tax">
+                                <span>Cash out</span><span id="inc-withdrawals">–</span>
+                            </div>
+                            <div class="income-breakdown-row">
+                                <span>Net movement</span><span id="inc-net-cash">–</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Tab switcher ── -->
+                <div class="income-tabs">
+                    <div class="income-tab active" onclick="incomeTab('dividends', this)">Dividends by Asset</div>
+                    <div class="income-tab" onclick="incomeTab('interest', this)">Interest</div>
+                    <div class="income-tab" onclick="incomeTab('cashflows', this)">Cash Flows</div>
+                </div>
+
+                <!-- Tab: Dividends by Asset -->
+                <div id="inc-tab-dividends">
+                    <div id="inc-dividends-table">
+                        <div class="empty-state"><div class="icon">◇</div>No dividend data.</div>
+                    </div>
+                </div>
+
+                <!-- Tab: Interest -->
+                <div id="inc-tab-interest" style="display:none;">
+                    <div id="inc-interest-table">
+                        <div class="empty-state"><div class="icon">◆</div>No interest data.</div>
+                    </div>
+                </div>
+
+                <!-- Tab: Cash Flows -->
+                <div id="inc-tab-cashflows" style="display:none;">
+                    <div id="inc-cf-summary" class="cf-summary-grid"></div>
+                    <div id="inc-cf-table">
+                        <div class="empty-state"><div class="icon">⬡</div>No cash flow data.</div>
+                    </div>
+                </div>
+
+            </div><!-- /inc-content -->
+        </div><!-- /panel-income -->
+
+        <!-- ── MARKET DATA ── -->
+        <div class="panel" id="panel-marketdata">
+            <div class="card">
+                <div class="card-title">Get quote</div>
+                <div class="flex gap-10" style="flex-wrap:wrap; align-items:flex-end;">
+                    <div class="field" style="margin:0; flex:1; min-width:120px;">
+                        <label>Symbol</label>
+                        <input type="text" id="mkt-symbol" placeholder="AAPL" style="text-transform:uppercase;"/>
+                    </div>
+                    <button class="btn btn-primary" onclick="getQuote()">Get quote</button>
+                </div>
+                <div id="quote-result" class="response-box mt-16">Enter a symbol and click Get quote…</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Batch quotes</div>
+                <div class="flex gap-10" style="align-items:flex-end;">
+                    <div class="field" style="margin:0; flex:1;">
+                        <label>Symbols (comma separated)</label>
+                        <input type="text" id="batch-symbols" placeholder="AAPL,MSFT,GOOGL"/>
+                    </div>
+                    <button class="btn btn-primary" onclick="getBatch()">Fetch</button>
+                </div>
+                <div id="batch-result" class="response-box mt-16">Enter symbols and click Fetch…</div>
+            </div>
+        </div>
+
+        <!-- ── ASSETS ── -->
+        <div class="panel" id="panel-assets">
+            <div class="card">
+                <div class="card-title">Assets in database</div>
+                <div class="flex gap-10" style="margin-bottom:14px;">
+                    <button class="btn btn-primary btn-sm" onclick="loadAssets()">↻ Load all</button>
+                    <button class="btn btn-secondary btn-sm" onclick="loadActiveSymbols()">Active only</button>
+                </div>
+                <div id="assets-list"><div class="empty-state"><div class="icon">◇</div>Click Load to see assets</div></div>
+            </div>
+        </div>
+
+        <!-- ── IMPORT ── -->
+        <div class="panel" id="panel-import">
+            <div class="card">
+                <div class="card-title">Import XTB Excel</div>
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Portfolio</label>
+                        <select id="imp-portfolio-id">
+                            <option value="">Select portfolio…</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Excel file (.xlsx)</label>
+                        <input type="file" id="imp-file" accept=".xlsx,.xls"
+                               style="color:var(--text2); padding:7px 10px;"/>
+                    </div>
+                </div>
+                <button class="btn btn-primary mt-16" onclick="doImport()">Upload & Import</button>
+                <div id="import-result" class="response-box mt-16" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- ── API TESTER ── -->
+        <div class="panel" id="panel-apitester">
+            <div class="card">
+                <div class="card-title">API Tester</div>
+                <div class="flex gap-10" style="flex-wrap:wrap; align-items:flex-end; margin-bottom:14px;">
+                    <div class="field" style="margin:0;">
+                        <label>Method</label>
+                        <select id="api-method" style="padding:9px 10px; font-size:13px; width:90px;">
+                            <option>GET</option>
+                            <option>POST</option>
+                            <option>PUT</option>
+                            <option>DELETE</option>
+                        </select>
+                    </div>
+                    <div class="field" style="margin:0; flex:1; min-width:200px;">
+                        <label>Endpoint</label>
+                        <input type="text" id="api-url" placeholder="/api/portfolios"/>
+                    </div>
+                    <button class="btn btn-primary" onclick="callApi()">Send</button>
+                </div>
+
+                <div class="field" style="margin-bottom:14px;">
+                    <label>Body (JSON — apenas POST/PUT)</label>
+                    <textarea id="api-body" placeholder='{ "name": "My portfolio" }'></textarea>
+                </div>
+
+                <div style="font-size:11px; color:var(--text3); margin-bottom:8px; font-family:var(--mono);">
+                    Shortcuts:
+                    <span class="btn btn-secondary btn-sm" style="font-size:10px; margin:0 2px; cursor:pointer;" onclick="setApiUrl('GET','/api/portfolios')">GET portfolios</span>
+                    <span class="btn btn-secondary btn-sm" style="font-size:10px; margin:0 2px; cursor:pointer;" onclick="setApiUrl('GET','/api/assets/symbols')">GET symbols</span>
+                    <span class="btn btn-secondary btn-sm" style="font-size:10px; margin:0 2px; cursor:pointer;" onclick="setApiUrl('GET','/actuator/health')">Health</span>
+                    <span class="btn btn-secondary btn-sm" style="font-size:10px; margin:0 2px; cursor:pointer;" onclick="setApiUrl('GET','/api/auth/me')">GET me</span>
+                </div>
+
+                <div class="response-box" id="api-response">Response will appear here…</div>
+            </div>
+        </div>
+
+        <!-- ── TOKENS ── -->
+        <div class="panel" id="panel-tokens">
+            <div class="card">
+                <div class="card-title">Current tokens</div>
+                <div class="token-label">Access Token <span class="badge badge-green" id="at-exp">–</span></div>
+                <div class="token-box" id="token-access">Not logged in</div>
+                <div class="token-label">Refresh Token</div>
+                <div class="token-box" id="token-refresh">–</div>
+                <div class="flex gap-10 mt-16">
+                    <button class="btn btn-secondary btn-sm" onclick="doRefresh()">↻ Refresh token</button>
+                    <button class="btn btn-danger btn-sm" onclick="doLogout()">Revoke all & logout</button>
+                </div>
+                <div id="token-msg" class="alert mt-12"></div>
+            </div>
+        </div>
+
+    </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+    // ════════════════════════════════════════════
+    // State
+    // ════════════════════════════════════════════
+    const BASE = '';
+
+    let state = {
+        accessToken:  localStorage.getItem('at')  || null,
+        refreshToken: localStorage.getItem('rt')  || null,
+        user:         JSON.parse(localStorage.getItem('user') || 'null'),
+        portfolios:   []
+    };
+
+    // ════════════════════════════════════════════
+    // Boot
+    // ════════════════════════════════════════════
+    window.onload = () => {
+        if (state.accessToken && state.user) {
+            hideAuthWall();
+            refreshUI();
+        }
+    };
+
+    // ════════════════════════════════════════════
+    // HTTP helper
+    // ════════════════════════════════════════════
+    async function api(method, path, body, isForm) {
+        const headers = {};
+        if (state.accessToken) headers['Authorization'] = 'Bearer ' + state.accessToken;
+        let opts = { method, headers };
+        if (body && !isForm) {
+            headers['Content-Type'] = 'application/json';
+            opts.body = JSON.stringify(body);
+        } else if (body && isForm) {
+            opts.body = body;
+        }
+        const r = await fetch(BASE + path, opts);
+        const ct = r.headers.get('content-type') || '';
+        let data;
+        try { data = ct.includes('json') ? await r.json() : await r.text(); }
+        catch(e) { data = await r.text(); }
+        return { ok: r.ok, status: r.status, data };
+    }
+
+    // ════════════════════════════════════════════
+    // AUTH
+    // ════════════════════════════════════════════
+    function switchAuthTab(tab) {
+        document.querySelectorAll('.auth-tab').forEach((t,i) =>
+            t.classList.toggle('active', (i===0 && tab==='login') || (i===1 && tab==='register')));
+        document.getElementById('tab-login').style.display    = tab==='login'    ? '' : 'none';
+        document.getElementById('tab-register').style.display = tab==='register' ? '' : 'none';
+        clearAuthAlert();
+    }
+
+    function showAuthAlert(msg, type) {
+        const el = document.getElementById('auth-alert');
+        el.textContent = msg;
+        el.className = 'alert show alert-' + (type === 'ok' ? 'ok' : 'err');
+    }
+    function clearAuthAlert() {
+        document.getElementById('auth-alert').className = 'alert';
+    }
+
+    async function doLogin() {
+        const email    = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+        if (!email || !password) { showAuthAlert('Fill in all fields', 'err'); return; }
+        const r = await api('POST', '/api/auth/login', { email, password });
+        if (r.ok) {
+            state.accessToken  = r.data.accessToken;
+            state.refreshToken = r.data.refreshToken;
+            state.user         = r.data.user;
+            localStorage.setItem('at',   state.accessToken);
+            localStorage.setItem('rt',   state.refreshToken);
+            localStorage.setItem('user', JSON.stringify(state.user));
+            hideAuthWall();
+            refreshUI();
+        } else {
+            showAuthAlert(r.data?.message || 'Login failed', 'err');
+        }
+    }
+
+    async function doRegister() {
+        const username  = document.getElementById('reg-username').value.trim();
+        const email     = document.getElementById('reg-email').value.trim();
+        const password  = document.getElementById('reg-password').value;
+        const firstName = document.getElementById('reg-firstname').value.trim();
+        if (!username || !email || !password) { showAuthAlert('Fill in required fields', 'err'); return; }
+        const r = await api('POST', '/api/auth/register', { username, email, password, firstName });
+        if (r.ok) {
+            showAuthAlert(r.data?.message || 'Registered! Check your email.', 'ok');
+            switchAuthTab('login');
+            document.getElementById('login-email').value = email;
+        } else {
+            const msg = r.data?.message || (r.data?.fieldErrors
+                ? Object.values(r.data.fieldErrors || {}).join(' · ')
+                : 'Registration failed');
+            showAuthAlert(msg, 'err');
+        }
+    }
+
+    async function doLogout() {
+        await api('POST', '/api/auth/logout');
+        clearState();
+        location.reload();
+    }
+
+    async function doRefresh() {
+        if (!state.refreshToken) return;
+        const r = await api('POST', '/api/auth/refresh', { refreshToken: state.refreshToken });
+        if (r.ok) {
+            state.accessToken  = r.data.accessToken;
+            state.refreshToken = r.data.refreshToken;
+            localStorage.setItem('at', state.accessToken);
+            localStorage.setItem('rt', state.refreshToken);
+            refreshUI();
+            const msg = document.getElementById('token-msg');
+            msg.textContent = 'Tokens refreshed successfully';
+            msg.className = 'alert show alert-ok mt-12';
+            setTimeout(() => msg.className = 'alert mt-12', 3000);
+        }
+    }
+
+    function clearState() {
+        localStorage.removeItem('at'); localStorage.removeItem('rt'); localStorage.removeItem('user');
+        state.accessToken = state.refreshToken = state.user = null;
+    }
+
+    function hideAuthWall() {
+        document.getElementById('auth-wall').style.display = 'none';
+    }
+
+    // ════════════════════════════════════════════
+    // UI refresh
+    // ════════════════════════════════════════════
+    function refreshUI() {
+        if (!state.user) return;
+        const u = state.user;
+        document.getElementById('sidebar-username').textContent = u.username || u.email;
+        document.getElementById('sidebar-role').textContent     = (u.roles || []).join(', ');
+        document.getElementById('avatar-initials').textContent  = (u.username || u.email || '?')[0].toUpperCase();
+        document.getElementById('status-dot').className  = 'status-dot ok';
+        document.getElementById('status-text').textContent = 'connected';
+        document.getElementById('d-email').textContent = u.email || '–';
+        document.getElementById('d-roles').innerHTML   = (u.roles||[]).map(r =>
+            `<span class="badge badge-purple">${r}</span>`).join(' ') || '–';
+        document.getElementById('d-token-status').textContent  = state.accessToken ? 'valid' : 'none';
+        document.getElementById('d-token-status').className    = 'badge ' + (state.accessToken ? 'badge-green' : 'badge-gray');
+        document.getElementById('token-access').textContent  = state.accessToken  || '–';
+        document.getElementById('token-refresh').textContent = state.refreshToken || '–';
+        if (state.accessToken) {
+            try {
+                const payload = JSON.parse(atob(state.accessToken.split('.')[1]));
+                document.getElementById('jwt-decoded').innerHTML = colorJson(payload);
+                const exp = new Date(payload.exp * 1000);
+                const diff = Math.round((exp - Date.now()) / 1000 / 60);
+                document.getElementById('at-exp').textContent = `expires in ${diff}m`;
+            } catch(e) {}
+        }
+        loadPortfolioSelects();
+    }
+
+    // ════════════════════════════════════════════
+    // Navigation
+    // ════════════════════════════════════════════
+    const PAGE_TITLES = {
+        dashboard:'Dashboard', portfolios:'Portfolios', metrics:'Metrics',
+        transactions:'Transactions', positions:'Positions',
+        'close-positions':'Close Positions', cashflows:'Cash Flows',
+        income:'Income', marketdata:'Market Data', assets:'Assets',
+        import:'Import XTB', apitester:'API Tester', tokens:'Auth Tokens'
+    };
+
+    function nav(page) {
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.classList.toggle('active', el.getAttribute('onclick') === `nav('${page}')`);
+        });
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('panel-' + page)?.classList.add('active');
+        document.getElementById('topbar-title').textContent = PAGE_TITLES[page] || page;
+    }
+
+    // ════════════════════════════════════════════
+    // Portfolios
+    // ════════════════════════════════════════════
+    async function loadPortfolios() {
+        const r = await api('GET', '/api/portfolios');
+        const el = document.getElementById('portfolio-list');
+        if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
+            state.portfolios = r.data;
+            el.innerHTML = `<table>
+  <thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Actions</th></tr></thead>
+  <tbody>${r.data.map(p => `
+    <tr>
+      <td class="mono">#${p.id}</td>
+      <td>${p.name}</td>
+      <td>${p.description || '<span style="color:var(--text3)">–</span>'}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="viewPortfolio(${p.id})">View positions</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:6px;" onclick="viewMetrics(${p.id})">Metrics</button>
+        <button class="btn btn-secondary btn-sm" style="margin-left:6px;" onclick="deletePortfolio(${p.id})">Delete</button>
+      </td>
+    </tr>`).join('')}
+  </tbody></table>`;
+            loadPortfolioSelects();
+        } else if (r.ok) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">⬡</div>No portfolios yet. Create one above.</div>`;
+        } else {
+            el.innerHTML = `<div style="color:var(--danger);font-size:13px;">${r.data?.message || 'Error loading portfolios'}</div>`;
+        }
+    }
+
+    async function createPortfolio() {
+        const name = document.getElementById('p-name').value.trim();
+        const description = document.getElementById('p-desc').value.trim();
+        if (!name) return;
+        const r = await api('POST', '/api/portfolios', { name, description });
+        if (r.ok) { toggleCreate('portfolio-create'); loadPortfolios(); }
+    }
+
+    async function deletePortfolio(id) {
+        if (!confirm('Delete portfolio #' + id + '?')) return;
+        await api('DELETE', '/api/portfolios/' + id);
+        loadPortfolios();
+    }
+
+    function viewPortfolio(id) {
+        nav('positions');
+        document.getElementById('pos-portfolio-id').value = id;
+        loadPositions();
+    }
+
+    function viewMetrics(id) {
+        nav('metrics');
+        document.getElementById('met-portfolio-id').value = id;
+        loadMetrics();
+    }
+
+    // ════════════════════════════════════════════
+    // METRICS
+    // ════════════════════════════════════════════
+    async function loadMetrics() {
+        const id = document.getElementById('met-portfolio-id').value;
+        if (!id) return;
+
+        // Show loading
+        document.getElementById('met-loading').style.display  = 'block';
+        document.getElementById('met-content').style.display  = 'none';
+        document.getElementById('met-error').style.display    = 'none';
+
+        const r = await api('GET', `/api/portfolios/${id}/metrics`);
+
+        document.getElementById('met-loading').style.display = 'none';
+
+        if (!r.ok) {
+            const errEl = document.getElementById('met-error');
+            errEl.textContent = r.data?.message || 'Failed to load metrics';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        renderMetrics(r.data);
+        document.getElementById('met-content').style.display = 'block';
+        document.getElementById('met-last-updated').textContent =
+            'Updated ' + new Date().toLocaleTimeString();
+    }
+
+    function renderMetrics(m) {
+        // ── Helpers ──────────────────────────────────
+        const fmt = (v, decimals = 2) => {
+            if (v == null) return '–';
+            const n = parseFloat(v);
+            if (isNaN(n)) return '–';
+            return n.toLocaleString('pt-PT', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+        };
+        const fmtCcy = (v) => {
+            if (v == null) return '–';
+            const n = parseFloat(v);
+            if (isNaN(n)) return '–';
+            return (n >= 0 ? '+' : '') + fmt(v) + ' €';
+        };
+        const fmtPct = (v) => v == null ? '–' : fmt(v) + '%';
+        const fmtDate = (v) => {
+            if (!v) return '–';
+            try { return new Date(v).toLocaleDateString('pt-PT'); } catch { return '–'; }
+        };
+        const plClass = (v) => {
+            if (v == null) return '';
+            return parseFloat(v) >= 0 ? 'positive' : 'negative';
+        };
+        const plSign = (v) => {
+            if (v == null) return '–';
+            const n = parseFloat(v);
+            return (n >= 0 ? '+' : '') + fmt(v) + ' €';
+        };
+
+        // ── KPI Row 1 — Value & Returns ──────────────
+        document.getElementById('met-kpi-row1').innerHTML = `
+        <div class="kpi-card ${plClass(m.totalReturn)}">
+            <div class="kpi-label">Total Return</div>
+            <div class="kpi-value ${plClass(m.totalReturn)}">${plSign(m.totalReturn)}</div>
+            <div class="kpi-sub">${fmtPct(m.totalReturnPercentage)}</div>
+            <span class="kpi-icon">↗</span>
+        </div>
+        <div class="kpi-card ${plClass(m.annualizedReturn)}">
+            <div class="kpi-label">Annualized Return (CAGR)</div>
+            <div class="kpi-value ${plClass(m.annualizedReturn)}">${fmtPct(m.annualizedReturn)}</div>
+            <div class="kpi-sub">${m.daysInvested || '–'} days invested</div>
+            <span class="kpi-icon">▲</span>
+        </div>
+        <div class="kpi-card neutral">
+            <div class="kpi-label">Current Value</div>
+            <div class="kpi-value neutral">${fmt(m.currentValue)} €</div>
+            <div class="kpi-sub">Invested: ${fmt(m.totalInvested)} €</div>
+            <span class="kpi-icon">◈</span>
+        </div>
+        <div class="kpi-card ${plClass(m.unrealizedGains)}">
+            <div class="kpi-label">Unrealized Gains</div>
+            <div class="kpi-value ${plClass(m.unrealizedGains)}">${plSign(m.unrealizedGains)}</div>
+            <div class="kpi-sub">Realized: ${plSign(m.realizedGains)}</div>
+            <span class="kpi-icon">◎</span>
+        </div>`;
+
+        // ── KPI Row 2 — Risk & Dividends ─────────────
+        document.getElementById('met-kpi-row2').innerHTML = `
+        <div class="kpi-card positive">
+            <div class="kpi-label">Dividends Received</div>
+            <div class="kpi-value positive">${fmt(m.totalDividendsReceived)} €</div>
+            <div class="kpi-sub">Yield: ${fmtPct(m.dividendYield)} · Ann: ${fmtPct(m.annualizedDividendYield)}</div>
+            <span class="kpi-icon">◇</span>
+        </div>
+        <div class="kpi-card warn">
+            <div class="kpi-label">Volatility (Ann.)</div>
+            <div class="kpi-value warn">${m.volatility != null ? fmtPct(m.volatility) : '–'}</div>
+            <div class="kpi-sub">Std dev of daily returns × √252</div>
+            <span class="kpi-icon">≈</span>
+        </div>
+        <div class="kpi-card ${m.maxDrawdown != null && parseFloat(m.maxDrawdown) > 15 ? 'negative' : 'warn'}">
+            <div class="kpi-label">Max Drawdown</div>
+            <div class="kpi-value ${m.maxDrawdown != null && parseFloat(m.maxDrawdown) > 15 ? 'negative' : 'warn'}">${m.maxDrawdown != null ? '-' + fmtPct(Math.abs(parseFloat(m.maxDrawdown))) : '–'}</div>
+            <div class="kpi-sub">Peak-to-trough decline</div>
+            <span class="kpi-icon">↘</span>
+        </div>
+        <div class="kpi-card ${plClass(m.netReturn)}">
+            <div class="kpi-label">Net Return (after costs)</div>
+            <div class="kpi-value ${plClass(m.netReturn)}">${plSign(m.netReturn)}</div>
+            <div class="kpi-sub">${fmtPct(m.netReturnPercentage)}</div>
+            <span class="kpi-icon">⊟</span>
+        </div>`;
+
+        // ── Detail rows ───────────────────────────────
+        const set = (id, val, cssClass) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = val;
+            if (cssClass) el.className = 'detail-row-value ' + cssClass;
+        };
+
+        set('det-totalReturn',    plSign(m.totalReturn),           plClass(m.totalReturn));
+        set('det-totalReturnPct', fmtPct(m.totalReturnPercentage), plClass(m.totalReturnPercentage));
+        set('det-annualized',     fmtPct(m.annualizedReturn),      plClass(m.annualizedReturn));
+        set('det-ytd',            m.yearToDateReturn != null ? fmtPct(m.yearToDateReturn) : '–', plClass(m.yearToDateReturn));
+        set('det-monthly',        m.monthlyReturn    != null ? fmtPct(m.monthlyReturn)    : '–', plClass(m.monthlyReturn));
+        set('det-twr',            m.timeWeightedReturn  != null ? fmtPct(m.timeWeightedReturn)  : '–', '');
+        set('det-mwr',            m.moneyWeightedReturn != null ? fmtPct(m.moneyWeightedReturn) : '–', '');
+
+        set('det-invested',    fmt(m.totalInvested) + ' €',  '');
+        set('det-current',     fmt(m.currentValue)  + ' €',  '');
+        set('det-cash',        m.cashBalance != null ? fmt(m.cashBalance) + ' €' : '–', '');
+        set('det-total',       m.totalValue  != null ? fmt(m.totalValue)  + ' €' : '–', '');
+        set('det-unrealized',  plSign(m.unrealizedGains), plClass(m.unrealizedGains));
+        set('det-realized',    plSign(m.realizedGains),   plClass(m.realizedGains));
+        set('det-totalGains',  plSign(m.totalGains),      plClass(m.totalGains));
+
+        set('det-divTotal',      fmt(m.totalDividendsReceived) + ' €', 'positive');
+        set('det-divYield',      fmtPct(m.dividendYield), '');
+        set('det-divAnnualized', fmtPct(m.annualizedDividendYield), '');
+        set('det-fees',          m.totalFees  != null ? fmt(m.totalFees)  + ' €' : '–', m.totalFees  != null ? 'negative' : 'muted');
+        set('det-taxes',         m.totalTaxes != null ? fmt(m.totalTaxes) + ' €' : '–', m.totalTaxes != null ? 'negative' : 'muted');
+        set('det-netReturn',     plSign(m.netReturn),    plClass(m.netReturn));
+        set('det-netReturnPct',  fmtPct(m.netReturnPercentage), plClass(m.netReturnPercentage));
+
+        set('det-name',      m.portfolioName || '–', '');
+        set('det-positions', m.numberOfPositions != null ? m.numberOfPositions : '–', '');
+        set('det-assets',    m.numberOfAssets    != null ? m.numberOfAssets    : '–', '');
+        set('det-days',      m.daysInvested      != null ? m.daysInvested + ' days' : '–', '');
+        set('det-firstInv',  fmtDate(m.firstInvestmentDate), 'muted');
+        set('det-lastUpd',   fmtDate(m.lastUpdateDate),      'muted');
+
+        // ── Risk grid ─────────────────────────────────
+        const sharpe = m.sharpeRatio   != null ? parseFloat(m.sharpeRatio)   : null;
+        const sortino= m.sortinoRatio  != null ? parseFloat(m.sortinoRatio)  : null;
+        const beta   = m.beta          != null ? parseFloat(m.beta)          : null;
+
+        const riskCard = (label, value, desc, cssClass) => `
+        <div class="risk-card">
+            <div class="risk-card-label">${label}</div>
+            <div class="risk-card-value ${cssClass || ''}">${value}</div>
+            <div class="risk-card-desc">${desc}</div>
+        </div>`;
+
+        const sharpeClass = sharpe == null ? '' : sharpe >= 1 ? 'positive' : sharpe >= 0 ? 'warn' : 'negative';
+        const sortinoClass= sortino== null ? '' : sortino>= 1 ? 'positive' : sortino>= 0 ? 'warn' : 'negative';
+        const betaClass   = beta   == null ? '' : Math.abs(beta) < 1.2 ? 'positive' : 'warn';
+
+        document.getElementById('met-risk-grid').innerHTML =
+            riskCard('Sharpe Ratio',   sharpe  != null ? fmt(sharpe,  2) : '–', '> 1 is considered good',         sharpeClass) +
+            riskCard('Sortino Ratio',  sortino != null ? fmt(sortino, 2) : '–', 'Downside risk-adjusted return',  sortinoClass) +
+            riskCard('Beta',           beta    != null ? fmt(beta,    3) : '–', 'Correlation vs market',          betaClass) +
+            riskCard('Volatility',     m.volatility    != null ? fmtPct(m.volatility)    : '–', 'Annualized std deviation', 'warn') +
+            riskCard('Max Drawdown',   m.maxDrawdown   != null ? '-'+fmtPct(Math.abs(parseFloat(m.maxDrawdown))) : '–', 'Largest peak-to-trough', 'negative') +
+            riskCard('Current Drawdown', m.currentDrawdown != null ? '-'+fmtPct(Math.abs(parseFloat(m.currentDrawdown))) : '–', 'Drawdown from current peak', m.currentDrawdown != null && parseFloat(m.currentDrawdown) > 10 ? 'negative' : 'warn');
+    }
+
+    // ════════════════════════════════════════════
+    // Transactions
+    // ════════════════════════════════════════════
+    async function loadTransactions() {
+        const id = document.getElementById('tx-portfolio-id').value;
+        if (!id) return;
+        const r = await api('GET', `/api/portfolios/${id}/transactions`);
+        const el = document.getElementById('transactions-list');
+        if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
+            el.innerHTML = `<table>
+  <thead><tr><th>ID</th><th>Type</th><th>Symbol</th><th>Qty</th><th>Price</th><th>Amount</th><th>Fees</th><th>Date</th></tr></thead>
+  <tbody>${r.data.map(t => `
+    <tr>
+      <td class="mono">#${t.id}</td>
+      <td><span class="badge ${t.type==='BUY'?'badge-green':t.type==='SELL'?'badge-red':'badge-purple'}">${t.type}</span></td>
+      <td><strong>${t.asset?.symbol || '–'}</strong></td>
+      <td class="mono">${t.quantity}</td>
+      <td class="mono">${t.price}</td>
+      <td class="mono">${t.totalAmount}</td>
+      <td class="mono">${t.fees || 0}</td>
+      <td>${t.transactionDate?.slice(0,10) || '–'}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+        } else if (r.ok) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">⇄</div>No transactions in this portfolio.</div>`;
+        } else {
+            el.innerHTML = `<div style="color:var(--danger);font-size:13px;">${r.data?.message || 'Error'}</div>`;
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // Positions
+    // ════════════════════════════════════════════
+    async function loadPositions() {
+        const id = document.getElementById('pos-portfolio-id').value;
+        if (!id) return;
+        const r = await api('GET', `/api/portfolios/${id}/positions`);
+        const el = document.getElementById('positions-list');
+        if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
+            el.innerHTML = `<table>
+  <thead><tr><th>Type</th><th>Symbol</th><th>Qty</th><th>Avg Buy</th><th>Total Invested</th><th>Current Price</th><th>Unrealized P&L</th><th>Realized P&L</th></tr></thead>
+  <tbody>${r.data.map(p => {
+                const pl = parseFloat(p.unrealizedPL || 0);
+                const color = pl >= 0 ? 'var(--accent)' : 'var(--danger)';
+                return `<tr>
+      <td><span class="badge badge-purple">${p.asset?.type}</span></td>
+      <td><strong>${p.asset?.symbol || '–'}</strong></td>
+      <td class="mono">${p.quantity}</td>
+      <td class="mono">${p.averageBuyPrice || '–'}</td>
+      <td class="mono">${p.totalInvested || '–'}</td>
+      <td class="mono">${p.currentPrice || '–'}</td>
+      <td class="mono" style="color:${color}">${pl >= 0 ? '+' : ''}${p.unrealizedPL || '–'}</td>
+      <td class="mono">${p.realizedPL || '–'}</td>
+    </tr>`;}).join('')}
+  </tbody></table>`;
+        } else if (r.ok) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">◎</div>No positions found.</div>`;
+        } else {
+            el.innerHTML = `<div style="color:var(--danger);font-size:13px;">${r.data?.message || 'Error'}</div>`;
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // Close Positions
+    // ════════════════════════════════════════════
+    async function loadClosePositions() {
+        const id = document.getElementById('cp-portfolio-id').value;
+        if (!id) return;
+        const r = await api('GET', `/api/portfolios/${id}/closed-positions`);
+        const el = document.getElementById('close-positions-list');
+        if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
+            el.innerHTML = `
+    <table>
+        <thead><tr><th>Ticker</th><th>Instrument</th><th>Volume</th><th>Open Price</th><th>Close Price</th><th>Close Time</th><th>Net Profit</th></tr></thead>
+        <tbody>${r.data.map(p => {
+                const pl = parseFloat(p.profitLoss || 0);
+                const color = pl >= 0 ? 'var(--accent)' : 'var(--danger)';
+                const closeDate = p.closeTime ? new Date(p.closeTime).toLocaleDateString() : '–';
+                return `<tr>
+                <td><strong>${p.ticker || p.instrument || '–'}</strong></td>
+                <td><small>${p.instrument || '–'}</small></td>
+                <td class="mono">${p.volume || '0'}</td>
+                <td class="mono">${p.openPrice || '–'}</td>
+                <td class="mono">${p.closePrice || '–'}</td>
+                <td class="mono">${closeDate}</td>
+                <td class="mono" style="color:${color}; font-weight:bold;">${pl >= 0 ? '+' : ''}${pl.toFixed(2)}</td>
+            </tr>`;}).join('')}
+        </tbody>
+    </table>`;
+        } else if (r.ok) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">☒</div>No closed positions found.</div>`;
+        } else {
+            el.innerHTML = `<div style="color:var(--danger);font-size:13px;">${r.data?.message || 'Error'}</div>`;
+        }
+    }
+
+    async function recalcPositions() {
+        const id = document.getElementById('pos-portfolio-id').value;
+        if (!id) return;
+        await api('POST', `/api/portfolios/${id}/recalculate-positions`);
+        loadPositions();
+    }
+
+    // ════════════════════════════════════════════
+    // Cash Flows
+    // ════════════════════════════════════════════
+    async function loadCashFlows() {
+        const id = document.getElementById('cf-portfolio-id').value;
+        if (!id) return;
+        const r = await api('GET', `/api/portfolios/${id}/cash-flows`);
+        const el = document.getElementById('cashflows-list');
+        if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
+            el.innerHTML = `<table>
+  <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Currency</th><th>Description</th></tr></thead>
+  <tbody>${r.data.map(c => {
+                const amt = parseFloat(c.amount || 0);
+                return `<tr>
+      <td>${c.flowDate?.slice(0,10) || '–'}</td>
+      <td><span class="badge ${amt>=0?'badge-green':'badge-red'}">${c.type}</span></td>
+      <td class="mono" style="color:${amt>=0?'var(--accent)':'var(--danger)'}">${amt>=0?'+':''}${c.amount}</td>
+      <td>${c.currency || '–'}</td>
+      <td style="color:var(--text3)">${c.comment || '–'}</td>
+    </tr>`;}).join('')}
+  </tbody></table>`;
+        } else if (r.ok) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">⬡</div>No cash flows found.</div>`;
+        } else {
+            el.innerHTML = `<div style="color:var(--danger);font-size:13px;">${r.data?.message || 'Error'}</div>`;
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // Market Data
+    // ════════════════════════════════════════════
+    async function getQuote() {
+        const symbol = document.getElementById('mkt-symbol').value.trim().toUpperCase();
+        if (!symbol) return;
+        const r = await api('GET', `/api/market-data/quote/${symbol}`);
+        document.getElementById('quote-result').innerHTML = colorJson(r.data);
+    }
+
+    async function getBatch() {
+        const symbols = document.getElementById('batch-symbols').value.trim();
+        if (!symbols) return;
+        const r = await api('GET', `/api/market-data/stock/quotes?symbols=${symbols}`);
+        document.getElementById('batch-result').innerHTML = colorJson(r.data);
+    }
+
+    // ════════════════════════════════════════════
+    // Assets
+    // ════════════════════════════════════════════
+    async function loadAssets() {
+        const r = await api('GET', '/api/assets/symbols/stats');
+        const el = document.getElementById('assets-list');
+        if (r.ok) {
+            el.innerHTML = `<div class="response-box">${colorJson(r.data)}</div>`;
+        }
+    }
+
+    async function loadActiveSymbols() {
+        const r = await api('GET', '/api/assets/symbols/active');
+        const el = document.getElementById('assets-list');
+        if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
+            el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:8px;">
+  ${r.data.map(s => `<span class="badge badge-green">${s}</span>`).join('')}
+</div>`;
+        } else {
+            el.innerHTML = `<div class="empty-state"><div class="icon">◇</div>No active symbols.</div>`;
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // Import
+    // ════════════════════════════════════════════
+    async function doImport() {
+        const id   = document.getElementById('imp-portfolio-id').value;
+        const file = document.getElementById('imp-file').files[0];
+        if (!id || !file) return;
+        const fd = new FormData();
+        fd.append('file', file);
+        const r = await api('POST', `/api/portfolios/${id}/import/xtb`, fd, true);
+        const el = document.getElementById('import-result');
+        el.style.display = 'block';
+        el.innerHTML = colorJson(r.data);
+    }
+
+    // ════════════════════════════════════════════
+    // API Tester
+    // ════════════════════════════════════════════
+    async function callApi() {
+        const method = document.getElementById('api-method').value;
+        const url    = document.getElementById('api-url').value.trim();
+        const body   = document.getElementById('api-body').value.trim();
+        if (!url) return;
+        let parsed;
+        if (body && (method === 'POST' || method === 'PUT')) {
+            try { parsed = JSON.parse(body); } catch(e) {
+                document.getElementById('api-response').innerHTML = '<span class="err">Invalid JSON body</span>';
+                return;
+            }
+        }
+        const r = await api(method, url, parsed);
+        document.getElementById('api-response').innerHTML =
+            `<span style="color:${r.ok?'var(--accent)':'var(--danger)'}">HTTP ${r.status}</span>\n\n${colorJson(r.data)}`;
+    }
+
+    function setApiUrl(method, url) {
+        document.getElementById('api-method').value = method;
+        document.getElementById('api-url').value    = url;
+    }
+
+    // ════════════════════════════════════════════
+    // Health
+    // ════════════════════════════════════════════
+    async function pingHealth() {
+        const r = await api('GET', '/actuator/health');
+        const el = document.getElementById('health-result');
+        el.style.display = 'block';
+        el.innerHTML = colorJson(r.data);
+    }
+
+    // ════════════════════════════════════════════
+    // Helpers
+    // ════════════════════════════════════════════
+    function toggleCreate(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === 'none' ? '' : 'none';
+    }
+
+    function loadPortfolioSelects() {
+        const ids = state.portfolios.map(p =>
+            `<option value="${p.id}">${p.name} (#${p.id})</option>`).join('');
+        ['tx-portfolio-id','pos-portfolio-id','cp-portfolio-id','cf-portfolio-id',
+            'imp-portfolio-id','met-portfolio-id','inc-portfolio-id'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = `<option value="">Select portfolio…</option>${ids}`;
+        });
+    }
+
+    // ════════════════════════════════════════════
+    // INCOME
+    // ════════════════════════════════════════════
+
+    // Estado local do income (para os tabs não refazerem pedidos)
+    let _incomeData = null;
+
+    async function loadIncome() {
+        const id = document.getElementById('inc-portfolio-id').value;
+        if (!id) return;
+
+        document.getElementById('inc-content').style.display = 'none';
+        document.getElementById('inc-error').style.display   = 'none';
+        _incomeData = null;
+
+        const [rIncome, rInterest, rCashFlows] = await Promise.all([
+            api('GET', `/api/portfolios/${id}/income`),
+            api('GET', `/api/portfolios/${id}/income/interest`),
+            api('GET', `/api/portfolios/${id}/cash-flows`)
+        ]);
+
+        if (!rIncome.ok) {
+            const errEl = document.getElementById('inc-error');
+            errEl.textContent = rIncome.data?.message || 'Failed to load income data';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        _incomeData = {
+            statement:  rIncome.data,
+            interest:   rInterest.ok ? rInterest.data : [],
+            cashFlows:  rCashFlows.ok ? rCashFlows.data : []
+        };
+
+        renderIncomeSummary(_incomeData.statement);
+        renderDividendsTable(_incomeData.statement.dividendsByAsset || []);
+        renderInterestTable(_incomeData.interest);
+        renderCashFlowsTab(_incomeData.statement, _incomeData.cashFlows);
+
+        document.getElementById('inc-content').style.display = 'block';
+        document.getElementById('inc-last-updated').textContent =
+            'Updated ' + new Date().toLocaleTimeString();
+    }
+
+    function renderIncomeSummary(s) {
+        const fmt = (v, sign = false) => {
+            if (v == null) return '–';
+            const n = parseFloat(v);
+            if (isNaN(n)) return '–';
+            const str = Math.abs(n).toLocaleString('pt-PT', {
+                minimumFractionDigits: 2, maximumFractionDigits: 2
+            });
+            if (sign) return (n >= 0 ? '+' : '-') + str + ' €';
+            return str + ' €';
+        };
+
+        // Dividends card
+        document.getElementById('inc-div-net').textContent    = fmt(s.totalDividendsNet);
+        document.getElementById('inc-div-gross').textContent  = fmt(s.totalDividendsGross);
+        document.getElementById('inc-div-wht').textContent    = s.totalWithholdingTax != null
+            ? '-' + fmt(s.totalWithholdingTax) : '–';
+
+        // Interest card
+        document.getElementById('inc-int-net').textContent    = fmt(s.totalInterestNet);
+        document.getElementById('inc-int-gross').textContent  = fmt(s.totalInterestGross);
+        document.getElementById('inc-int-tax').textContent    = s.totalInterestTax != null
+            ? '-' + fmt(s.totalInterestTax) : '–';
+
+        // Total card
+        document.getElementById('inc-total-net').textContent   = fmt(s.totalIncomeNet);
+        document.getElementById('inc-deposits').textContent    = fmt(s.totalDeposits);
+        document.getElementById('inc-withdrawals').textContent = s.totalWithdrawals != null
+            ? '-' + fmt(s.totalWithdrawals) : '–';
+        document.getElementById('inc-net-cash').textContent    = fmt(s.netCashMovement, true);
+    }
+
+    function renderDividendsTable(rows) {
+        const el = document.getElementById('inc-dividends-table');
+        if (!rows || rows.length === 0) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">◇</div>No dividends recorded.</div>`;
+            return;
+        }
+
+        // Totals footer
+        const totalGross = rows.reduce((a, r) => a + parseFloat(r.grossAmount || 0), 0);
+        const totalTax   = rows.reduce((a, r) => a + parseFloat(r.taxAmount   || 0), 0);
+        const totalNet   = rows.reduce((a, r) => a + parseFloat(r.netAmount   || 0), 0);
+
+        const fmt2 = v => parseFloat(v || 0).toLocaleString('pt-PT', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
+
+        el.innerHTML = `
+    <table>
+        <thead>
+            <tr>
+                <th>Ticker</th>
+                <th>Instrument</th>
+                <th style="text-align:right;">Gross (€)</th>
+                <th style="text-align:right;">WHT (€)</th>
+                <th style="text-align:right;">Net (€)</th>
+                <th style="text-align:right;">Payments</th>
+                <th style="text-align:right;">Yield on Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${rows.map(r => `
+            <tr>
+                <td><strong>${r.ticker || '–'}</strong></td>
+                <td style="color:var(--text3); font-size:12px;">${r.instrument || '–'}</td>
+                <td class="tbl-gross" style="text-align:right;">${fmt2(r.grossAmount)}</td>
+                <td class="tbl-tax"   style="text-align:right;">${r.taxAmount && parseFloat(r.taxAmount) > 0 ? '-' + fmt2(r.taxAmount) : '–'}</td>
+                <td class="tbl-net"   style="text-align:right;">${fmt2(r.netAmount)}</td>
+                <td class="mono"      style="text-align:right; color:var(--text3);">${r.paymentCount || 0}×</td>
+                <td class="tbl-yield" style="text-align:right;">${r.yieldOnCost != null ? fmt2(r.yieldOnCost) + '%' : '–'}</td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot>
+            <tr style="border-top: 1px solid var(--border);">
+                <td colspan="2" style="font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.06em;">Total</td>
+                <td class="tbl-gross" style="text-align:right;">${fmt2(totalGross)}</td>
+                <td class="tbl-tax"   style="text-align:right;">${totalTax > 0 ? '-' + fmt2(totalTax) : '–'}</td>
+                <td class="tbl-net"   style="text-align:right;">${fmt2(totalNet)}</td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
+    </table>`;
+    }
+
+    function renderInterestTable(txs) {
+        const el = document.getElementById('inc-interest-table');
+        if (!txs || txs.length === 0) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">◆</div>No interest transactions.</div>`;
+            return;
+        }
+
+        const fmt2 = v => parseFloat(v || 0).toLocaleString('pt-PT', {
+            minimumFractionDigits: 4, maximumFractionDigits: 4
+        });
+
+        // Totals
+        const totalGross = txs
+            .filter(t => t.type === 'INTEREST')
+            .reduce((a, t) => a + parseFloat(t.amount || 0), 0);
+        const totalTax = txs
+            .filter(t => t.type === 'INTEREST_TAX')
+            .reduce((a, t) => a + Math.abs(parseFloat(t.amount || 0)), 0);
+
+        el.innerHTML = `
+    <div style="display:flex; gap:12px; margin-bottom:14px;">
+        <div class="cf-summary-card" style="flex:1;">
+            <div class="cf-summary-type">Gross Interest</div>
+            <div class="cf-summary-amount" style="color:var(--accent2);">${totalGross.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})} €</div>
+        </div>
+        <div class="cf-summary-card" style="flex:1;">
+            <div class="cf-summary-type">Tax Deducted</div>
+            <div class="cf-summary-amount" style="color:var(--danger);">-${totalTax.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})} €</div>
+        </div>
+        <div class="cf-summary-card" style="flex:1;">
+            <div class="cf-summary-type">Net Interest</div>
+            <div class="cf-summary-amount" style="color:var(--warn);">${(totalGross - totalTax).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})} €</div>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th style="text-align:right;">Amount (€)</th>
+                <th>Comment</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${txs.map(t => {
+            const amt = parseFloat(t.amount || 0);
+            const isPos = t.type === 'INTEREST';
+            return `<tr>
+                    <td class="mono" style="font-size:12px;">${t.transactionDate?.slice(0,10) || '–'}</td>
+                    <td><span class="badge ${isPos ? 'badge-interest' : 'badge-red'}">${t.type}</span></td>
+                    <td class="mono" style="text-align:right; color:${isPos ? 'var(--accent2)' : 'var(--danger)'};">
+                        ${isPos ? '+' : '-'}${Math.abs(amt).toLocaleString('pt-PT',{minimumFractionDigits:4,maximumFractionDigits:4})}
+                    </td>
+                    <td style="color:var(--text3); font-size:12px;">${t.notes || '–'}</td>
+                </tr>`;
+        }).join('')}
+        </tbody>
+    </table>`;
+    }
+
+    function renderCashFlowsTab(statement, txs) {
+        // Mini cards from statement summary
+        const cfSummaryEl = document.getElementById('inc-cf-summary');
+        const summaryRows = statement.cashFlowByType || [];
+
+        const cfTypeColor = type => {
+            const t = (type || '').toLowerCase();
+            if (t === 'deposit')    return { badge: 'badge-deposit',    amount: 'var(--accent)' };
+            if (t === 'withdrawal') return { badge: 'badge-withdrawal', amount: 'var(--danger)' };
+            if (t === 'transfer')   return { badge: 'badge-transfer',   amount: 'var(--accent2)' };
+            return { badge: 'badge-gray', amount: 'var(--text2)' };
+        };
+
+        if (summaryRows.length > 0) {
+            cfSummaryEl.innerHTML = summaryRows.map(r => {
+                const { amount: color } = cfTypeColor(r.type);
+                const amt = parseFloat(r.totalAmount || 0);
+                return `
+            <div class="cf-summary-card">
+                <div class="cf-summary-type">${r.type}</div>
+                <div class="cf-summary-amount" style="color:${color};">
+                    ${amt >= 0 ? '+' : ''}${amt.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})} €
+                </div>
+                <div class="cf-summary-count">${r.count} movement${r.count !== 1 ? 's' : ''}</div>
+            </div>`;
+            }).join('');
+        } else {
+            cfSummaryEl.innerHTML = '';
+        }
+
+        // Full table from raw cash flows
+        const cfTableEl = document.getElementById('inc-cf-table');
+        if (!txs || txs.length === 0) {
+            cfTableEl.innerHTML = `<div class="empty-state"><div class="icon">⬡</div>No cash flow movements.</div>`;
+            return;
+        }
+
+        cfTableEl.innerHTML = `
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th style="text-align:right;">Amount (€)</th>
+                <th>Currency</th>
+                <th>Comment</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${txs.map(c => {
+            const amt = parseFloat(c.amount || 0);
+            const { badge, amount: color } = cfTypeColor(c.type);
+            return `<tr>
+                    <td class="mono" style="font-size:12px;">${c.flowDate?.slice(0,10) || '–'}</td>
+                    <td><span class="badge ${badge}">${c.type}</span></td>
+                    <td class="mono" style="text-align:right; color:${color};">
+                        ${amt >= 0 ? '+' : ''}${Math.abs(amt).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})}
+                    </td>
+                    <td style="color:var(--text3);">${c.currency || '–'}</td>
+                    <td style="color:var(--text3); font-size:12px; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.comment || '–'}</td>
+                </tr>`;
+        }).join('')}
+        </tbody>
+    </table>`;
+    }
+
+    function incomeTab(name, el) {
+        // Update tab active state
+        document.querySelectorAll('.income-tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+
+        // Show/hide tab panels
+        document.getElementById('inc-tab-dividends').style.display  = name === 'dividends' ? '' : 'none';
+        document.getElementById('inc-tab-interest').style.display   = name === 'interest'  ? '' : 'none';
+        document.getElementById('inc-tab-cashflows').style.display  = name === 'cashflows' ? '' : 'none';
+    }
+</script>
+</body>
+</html>
