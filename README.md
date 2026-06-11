@@ -286,7 +286,6 @@ Resposta:
 │       │   application.properties
 │       │
 │       └───static
-│               app.js
 │               index.html
 │
 └───test

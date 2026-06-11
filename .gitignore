@@ -59,6 +59,5 @@ application-dev.yml
 # Others
 ############################
 tests_scripts_files/
-/src/main/resources/
 /QUICKSTART.md
 /Lombok maven fix.md
