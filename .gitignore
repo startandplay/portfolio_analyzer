@@ -54,6 +54,8 @@ application-local.properties
 application-local.yml
 application-dev.properties
 application-dev.yml
+application.properties
+application.dev.properties
 
 ############################
 # Others
