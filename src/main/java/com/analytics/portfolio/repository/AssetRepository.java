@@ -1,6 +1,6 @@
 package com.analytics.portfolio.repository;
 
-import com.analytics.portfolio.enums.AssetSource;
+import com.analytics.portfolio.enums.PortfolioSource;
 import com.analytics.portfolio.enums.AssetType;
 import com.analytics.portfolio.model.Asset;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -36,7 +36,7 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
             "WHERE EXISTS (SELECT 1 FROM Position p WHERE p.asset.id = a.id AND p.quantity > 0)")
     List<String> findSymbolsWithActivePositions();
 
-    List<Asset> findBySource(AssetSource source);
+    List<Asset> findBySource(PortfolioSource source);
 
     /**
      * Busca símbolos de assets de um portfolio específico

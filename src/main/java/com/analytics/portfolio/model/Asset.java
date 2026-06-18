@@ -1,6 +1,6 @@
 package com.analytics.portfolio.model;
 
-import com.analytics.portfolio.enums.AssetSource;
+import com.analytics.portfolio.enums.PortfolioSource;
 import com.analytics.portfolio.enums.AssetType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -37,7 +37,7 @@ public class Asset {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AssetSource source; // XTB, BINANCE, MANUAL
+    private PortfolioSource source; // XTB, BINANCE, MANUAL
 
     private BigDecimal currentPrice;
 

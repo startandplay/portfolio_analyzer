@@ -45,8 +45,8 @@ public class MetricsCalculationService {
             .map(this::calculateRealizedPL)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalDividends = portfolio.getDividends().stream()
-            .map(Dividend::getNetAmount)
+        BigDecimal totalDividends = positions.stream()
+            .map(Position::getTotalDividendsReceived)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Calcula retorno total

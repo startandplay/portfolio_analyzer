@@ -1,6 +1,6 @@
 package com.analytics.portfolio.integration;
 
-import com.analytics.portfolio.enums.AssetSource;
+import com.analytics.portfolio.enums.PortfolioSource;
 import com.analytics.portfolio.enums.AssetType;
 import com.analytics.portfolio.enums.TransactionType;
 import com.analytics.portfolio.model.*;
@@ -328,7 +328,7 @@ public class XTBImportService {
 
         return CashFlow.builder()
                 .externalId(data.getTransactionId())
-                .importSource(AssetSource.XTB.name())
+                .importSource(PortfolioSource.XTB.name())
                 .portfolio(portfolio)
                 .flowDate(data.getTime())
                 .amount(data.getAmount())
@@ -362,7 +362,7 @@ public class XTBImportService {
                 .transactionDate(data.getTime())
                 .currency(transactionDto.currency())
                 .taxPercentage(transactionDto.percentage())
-                .importSource(AssetSource.XTB.name())
+                .importSource(PortfolioSource.XTB.name())
                 .notes(data.getComment())// keeps the original comment
                 .build();
     }
@@ -394,7 +394,7 @@ public class XTBImportService {
                             .symbol(ticker)
                             .instrument(instrument)
                             .type(AssetType.STOCK)
-                            .source(AssetSource.XTB)
+                            .source(PortfolioSource.XTB)
                             .build();
 
                     return assetRepository.save(newAsset);

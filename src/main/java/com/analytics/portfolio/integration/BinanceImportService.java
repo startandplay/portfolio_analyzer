@@ -1,6 +1,6 @@
 package com.analytics.portfolio.integration;
 
-import com.analytics.portfolio.enums.AssetSource;
+import com.analytics.portfolio.enums.PortfolioSource;
 import com.analytics.portfolio.enums.AssetType;
 import com.analytics.portfolio.enums.TransactionType;
 import com.analytics.portfolio.model.Asset;
@@ -157,7 +157,7 @@ public class BinanceImportService {
                 Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
 
         // Buscar ou criar o Asset
-        Asset asset = findOrCreateAsset(symbol, AssetType.CRYPTO, AssetSource.BINANCE);
+        Asset asset = findOrCreateAsset(symbol, AssetType.CRYPTO, PortfolioSource.BINANCE);
 
         return Transaction.builder()
                 .portfolio(portfolio)
@@ -206,7 +206,7 @@ public class BinanceImportService {
         }
 
         // Buscar ou criar o Asset
-        Asset asset = findOrCreateAsset(pair, AssetType.CRYPTO, AssetSource.BINANCE);
+        Asset asset = findOrCreateAsset(pair, AssetType.CRYPTO, PortfolioSource.BINANCE);
 
         return Transaction.builder()
                 .portfolio(portfolio)
@@ -307,7 +307,7 @@ public class BinanceImportService {
     /**
      * Busca um Asset existente ou cria um novo
      */
-    private Asset findOrCreateAsset(String symbol, AssetType type, AssetSource source) {
+    private Asset findOrCreateAsset(String symbol, AssetType type, PortfolioSource source) {
         return assetRepository.findBySymbol(symbol)
                 .orElseGet(() -> {
                     Asset newAsset = Asset.builder()
@@ -315,7 +315,7 @@ public class BinanceImportService {
                             .instrument(symbol)
                             .type(type)
                             .source(source)
-                            .exchange(source == AssetSource.BINANCE ? "BINANCE" : null)
+                            .exchange(source == PortfolioSource.BINANCE ? "BINANCE" : null)
                             .build();
 
                     return assetRepository.save(newAsset);
