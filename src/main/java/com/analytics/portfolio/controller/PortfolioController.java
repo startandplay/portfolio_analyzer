@@ -4,7 +4,11 @@ import com.analytics.portfolio.dto.*;
 import com.analytics.portfolio.integration.BinanceImportService;
 import com.analytics.portfolio.integration.XTBImportService;
 import com.analytics.portfolio.model.*;
-import com.analytics.portfolio.repository.*;
+import com.analytics.portfolio.repository.CashFlowRepository;
+import com.analytics.portfolio.repository.DividendRepository;
+import com.analytics.portfolio.repository.PositionRepository;
+import com.analytics.portfolio.repository.TransactionRepository;
+import com.analytics.portfolio.security.CurrentUserResolver;
 import com.analytics.portfolio.service.MetricsCalculationService;
 import com.analytics.portfolio.service.PortfolioService;
 import com.analytics.portfolio.service.PositionService;
@@ -39,6 +43,8 @@ public class PortfolioController {
     private final XTBImportService        xtbImportService;
     private final BinanceImportService    binanceImportService;
     private final PositionService         positionService;
+    private final CurrentUserResolver userResolver;
+
 
     // ════════════════════════════════════════════════════════════
     // CRUD — todos os endpoints filtrados pelo user autenticado
@@ -48,8 +54,9 @@ public class PortfolioController {
     @Transactional(readOnly = true)
     @Operation(summary = "List all portfolios for the authenticated user")
     public ResponseEntity<List<PortfolioSummary>> listPortfolios(
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         return ResponseEntity.ok(portfolioService.listPortfolios(user));
     }
 
@@ -57,8 +64,9 @@ public class PortfolioController {
     @Operation(summary = "Create a new portfolio for the authenticated user")
     public ResponseEntity<Portfolio> createPortfolio(
             @Valid @RequestBody CreatePortfolioRequest request,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         Portfolio created = portfolioService.createPortfolio(request, user);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -68,8 +76,9 @@ public class PortfolioController {
     @Operation(summary = "Get portfolio by ID — must belong to authenticated user")
     public ResponseEntity<Portfolio> getPortfolio(
             @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         return ResponseEntity.ok(portfolioService.getPortfolio(id, user));
     }
 
@@ -78,8 +87,9 @@ public class PortfolioController {
     public ResponseEntity<Portfolio> updatePortfolio(
             @PathVariable Long id,
             @Valid @RequestBody CreatePortfolioRequest request,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         return ResponseEntity.ok(portfolioService.updatePortfolio(id, request, user));
     }
 
@@ -87,8 +97,9 @@ public class PortfolioController {
     @Operation(summary = "Delete portfolio and all its data")
     public ResponseEntity<Void> deletePortfolio(
             @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         portfolioService.deletePortfolio(id, user);
         return ResponseEntity.noContent().build();
     }
@@ -102,8 +113,9 @@ public class PortfolioController {
     @Operation(summary = "Get portfolio metrics and analytics")
     public ResponseEntity<PortfolioMetrics> getPortfolioMetrics(
             @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         Portfolio portfolio = portfolioService.getPortfolio(id, user);
         List<Position> positions = positionRepository.findByPortfolioId(id);
         PortfolioMetrics metrics = metricsService.calculatePortfolioMetrics(portfolio, positions);
@@ -115,8 +127,9 @@ public class PortfolioController {
     @Operation(summary = "Get metrics for all positions in a portfolio")
     public ResponseEntity<List<AssetMetrics>> getPositionsMetrics(
             @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(id, user); // ownership check
 
         List<Position> positions = positionRepository.findByPortfolioId(id);
@@ -148,8 +161,9 @@ public class PortfolioController {
             """
     )
     public ResponseEntity<AggregatePortfolioMetrics> getAggregateMetrics(
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         return ResponseEntity.ok(portfolioService.getAggregateMetrics(user));
     }
 
@@ -162,8 +176,9 @@ public class PortfolioController {
     @Operation(summary = "Get all positions in portfolio")
     public ResponseEntity<List<Position>> getPortfolioPositions(
             @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(id, user); // ownership check
         return ResponseEntity.ok(positionRepository.findByPortfolioId(id));
     }
@@ -173,8 +188,9 @@ public class PortfolioController {
     @Operation(summary = "Get all transactions")
     public ResponseEntity<List<Transaction>> getTransactions(
             @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(id, user); // ownership check
         return ResponseEntity.ok(
                 transactionRepository.findByPortfolioIdOrderByTransactionDateDesc(id));
@@ -185,8 +201,9 @@ public class PortfolioController {
     @Operation(summary = "Get all dividends")
     public ResponseEntity<List<Dividend>> getDividends(
             @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(id, user); // ownership check
         return ResponseEntity.ok(
                 dividendRepository.findByPortfolioIdOrderByPaymentDateDesc(id));
@@ -197,8 +214,9 @@ public class PortfolioController {
     @Operation(summary = "Get all cash flows")
     public ResponseEntity<List<CashFlow>> getPortfolioCashFlows(
             @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(id, user); // ownership check
         return ResponseEntity.ok(cashFlowRepository.findByPortfolioId(id));
     }
@@ -212,8 +230,9 @@ public class PortfolioController {
     public ResponseEntity<XTBImportService.ImportResult> importFromXTB(
             @PathVariable Long id,
             @RequestPart("file") MultipartFile file,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(id, user); // ownership check
 
         try {
@@ -236,8 +255,9 @@ public class PortfolioController {
     public ResponseEntity<ImportResult> importFromBinance(
             @PathVariable Long id,
             @RequestPart("file") MultipartFile file,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(id, user); // ownership check
 
         try {
@@ -259,8 +279,9 @@ public class PortfolioController {
     @Operation(summary = "Recalculate all positions based on transactions")
     public ResponseEntity<RecalculateResult> recalculatePositions(
             @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User authUser) {
 
+        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(id, user); // ownership check
 
         try {

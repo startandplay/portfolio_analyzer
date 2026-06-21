@@ -1,6 +1,7 @@
 package com.analytics.portfolio.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -30,17 +32,20 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter      jwtFilter;
-    private final UserDetailsService userDetailsService;
+    private final UserDetailsService           userDetailsService;
     private final JwtAuthenticationEntryPoint  authEntryPoint;
+
+    @Value("${app.dev-mode:false}")
+    private boolean devMode;
 
     // Endpoints completamente públicos (sem qualquer autenticação)
     private static final String[] PUBLIC_ENDPOINTS = {
-          /*  "/api/auth/register",
-            "/api/auth/login",
-            "/api/auth/refresh",
-            "/api/auth/verify-email",
-            "/api/auth/forgot-password",
-            "/api/auth/reset-password",*/
+            /*  "/api/auth/register",
+              "/api/auth/login",
+              "/api/auth/refresh",
+              "/api/auth/verify-email",
+              "/api/auth/forgot-password",
+              "/api/auth/reset-password",*/
             "/api/auth/**",
             // Swagger
             "/swagger-ui/**",
@@ -89,22 +94,30 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(authEntryPoint))
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()  // ← permite tudo sem autenticação
-                )
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-//                        .anyRequest().authenticated()
-//                )
-
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin()) // H2 console
                         .referrerPolicy(referrer ->
                                 referrer.policy(
                                         ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 );
-//                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        if (devMode) {
+            // ── DEV MODE: tudo público, filtro JWT desativado ──────
+            // Matchers específicos NUNCA depois de anyRequest() —
+            // aqui só há anyRequest(), por isso é válido isolado.
+            http.authorizeHttpRequests(auth -> auth
+                    .anyRequest().permitAll()
+            );
+            // jwtFilter NÃO é adicionado — não interfere com permitAll()
+        } else {
+            // ── PRODUÇÃO: autenticação obrigatória ─────────────────
+            // PUBLIC_ENDPOINTS primeiro, anyRequest().authenticated() por último.
+            http.authorizeHttpRequests(auth -> auth
+                    .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                    .anyRequest().authenticated()
+            );
+            http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        }
 
         return http.build();
     }
