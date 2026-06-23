@@ -6,7 +6,6 @@ import com.analytics.portfolio.integration.ImportOrchestrator;
 import com.analytics.portfolio.model.RawImportRecord;
 import com.analytics.portfolio.model.User;
 import com.analytics.portfolio.repository.RawImportRecordRepository;
-import com.analytics.portfolio.security.CurrentUserResolver;
 import com.analytics.portfolio.service.PortfolioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,20 +37,18 @@ public class ImportController {
     private final ImportOrchestrator        orchestrator;
     private final PortfolioService          portfolioService;
     private final RawImportRecordRepository rawRepo;
-    private final CurrentUserResolver       userResolver;
 
     @PostMapping(value = "/import", consumes = "multipart/form-data")
     @Operation(
             summary = "Import broker file",
-            description = "Accepts any supported broker file. Pass source=XTB, source=BINANCE, etc."
+            description = "Accepts any supported broker file. Pass ?source=XTB, ?source=BINANCE, etc."
     )
     public ResponseEntity<ImportResult> importFile(
             @PathVariable Long portfolioId,
             @RequestParam PortfolioSource source,
             @RequestPart("file") MultipartFile file,
-            @AuthenticationPrincipal User authUser) {
+            @AuthenticationPrincipal User user) {
 
-        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(portfolioId, user); // ownership check
 
         try {
@@ -75,24 +72,24 @@ public class ImportController {
     }
 
     @GetMapping("/import/batches")
-    @Operation(summary = "List import batches", description = "Returns all batch IDs for this portfolio")
+    @Operation(summary = "List import batches",
+               description = "Returns all batch IDs for this portfolio, most recent first")
     public ResponseEntity<List<String>> listBatches(
             @PathVariable Long portfolioId,
-            @AuthenticationPrincipal User authUser) {
+            @AuthenticationPrincipal User user) {
 
-        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(portfolioId, user);
         return ResponseEntity.ok(rawRepo.findDistinctBatchIdsByPortfolioId(portfolioId));
     }
 
     @GetMapping("/import/batches/{batchId}")
-    @Operation(summary = "Get raw records for a batch", description = "Returns all raw records of an import batch")
+    @Operation(summary = "Get raw records for a batch",
+               description = "Returns all raw records of an import batch — useful for debugging")
     public ResponseEntity<List<RawImportRecord>> getBatch(
             @PathVariable Long portfolioId,
             @PathVariable String batchId,
-            @AuthenticationPrincipal User authUser) {
+            @AuthenticationPrincipal User user) {
 
-        User user = userResolver.resolve(authUser);
         portfolioService.getPortfolio(portfolioId, user);
         return ResponseEntity.ok(rawRepo.findByBatchId(batchId));
     }

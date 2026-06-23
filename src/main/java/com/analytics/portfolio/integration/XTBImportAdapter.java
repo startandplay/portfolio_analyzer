@@ -6,6 +6,7 @@ import com.analytics.portfolio.enums.RawImportStatus;
 import com.analytics.portfolio.enums.TransactionType;
 import com.analytics.portfolio.model.*;
 import com.analytics.portfolio.repository.AssetRepository;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
@@ -27,16 +28,15 @@ import java.util.*;
 /**
  * Adaptador de importação para ficheiros Excel do XTB.
  *
- * Responsabilidade: ler o Excel, converter cada linha num
- * RawImportRecord com o payload JSON. Nada mais.
+ * Implementa BrokerImportAdapter  — responsável pelo parse do ficheiro.
+ * Implementa BrokerCanonicalMapper — responsável pelo mapeamento raw→canónico.
  *
- * A lógica de parse do XTBImportService original foi preservada
- * na íntegra — apenas a orquestração foi removida.
+ * O ImportOrchestrator usa as duas interfaces sem saber que é a mesma classe.
  */
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class XTBImportAdapter implements BrokerImportAdapter {
+public class XTBImportAdapter implements BrokerImportAdapter, BrokerCanonicalMapper {
 
     private static final List<DateTimeFormatter> DATE_FORMATS = List.of(
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
@@ -56,14 +56,12 @@ public class XTBImportAdapter implements BrokerImportAdapter {
     private final AssetRepository assetRepository;
     private final ObjectMapper    objectMapper;
 
-    @Override
-    public PortfolioSource getSource() {
-        return PortfolioSource.XTB;
-    }
+    // ════════════════════════════════════════════════════════════
+    // BrokerImportAdapter
+    // ════════════════════════════════════════════════════════════
 
-    // ════════════════════════════════════════════════════════════
-    // Entry point
-    // ════════════════════════════════════════════════════════════
+    @Override
+    public PortfolioSource getSource() { return PortfolioSource.XTB; }
 
     @Override
     public List<RawImportRecord> parse(MultipartFile file, Portfolio portfolio, String batchId)
@@ -80,10 +78,8 @@ public class XTBImportAdapter implements BrokerImportAdapter {
                 log.info("XTB sheet '{}' → {}", sheet.getSheetName(), sheetType);
 
                 switch (sheetType) {
-                    case "CASH_OPERATIONS" ->
-                            parseCashOperationsSheet(sheet, portfolio, batchId, file.getOriginalFilename(), records);
-                    case "CLOSED_POSITIONS" ->
-                            parseClosedPositionsSheet(sheet, portfolio, batchId, file.getOriginalFilename(), records);
+                    case "CASH_OPERATIONS"  -> parseCashOps(sheet, portfolio, batchId, file.getOriginalFilename(), records);
+                    case "CLOSED_POSITIONS" -> parseClosedPos(sheet, portfolio, batchId, file.getOriginalFilename(), records);
                     default -> log.warn("Sheet '{}' não reconhecida — ignorada", sheet.getSheetName());
                 }
             }
@@ -94,82 +90,196 @@ public class XTBImportAdapter implements BrokerImportAdapter {
     }
 
     // ════════════════════════════════════════════════════════════
-    // Cash Operations sheet
+    // BrokerCanonicalMapper
     // ════════════════════════════════════════════════════════════
 
-    private void parseCashOperationsSheet(Sheet sheet, Portfolio portfolio,
-                                          String batchId, String fileName,
-                                          List<RawImportRecord> out) {
+    @Override
+    public MappingResult map(JsonNode payload, Portfolio portfolio) {
+        String sheetType = payload.path("sheetType").asText();
+        return switch (sheetType) {
+            case "CASH_OPERATIONS"  -> mapCashOps(payload, portfolio);
+            case "CLOSED_POSITIONS" -> mapClosedPos(payload, portfolio);
+            default -> throw new IllegalArgumentException("XTB sheetType desconhecido: " + sheetType);
+        };
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // Parse helpers — Excel → RawImportRecord
+    // ════════════════════════════════════════════════════════════
+
+    private void parseCashOps(Sheet sheet, Portfolio portfolio,
+                               String batchId, String fileName,
+                               List<RawImportRecord> out) {
         for (int i = 5; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             if (row == null || isInvalidRow(row)) continue;
-
             try {
                 XTBRowData data = readRow(row);
                 ObjectNode payload = buildCashOpsPayload(data);
-
-                out.add(RawImportRecord.builder()
-                        .batchId(batchId)
-                        .portfolioId(portfolio.getId())
-                        .importSource(PortfolioSource.XTB.name())
-                        .fileName(fileName)
-                        .rowNumber(i)
-                        .rawPayload(objectMapper.writeValueAsString(payload))
-                        .status(RawImportStatus.PENDING)
-                        .build());
-
+                out.add(buildRecord(batchId, portfolio.getId(), fileName, i, payload));
             } catch (Exception e) {
                 log.warn("XTB CashOps linha {}: {}", i, e.getMessage());
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════
-    // Closed Positions sheet
-    // ════════════════════════════════════════════════════════════
-
-    private void parseClosedPositionsSheet(Sheet sheet, Portfolio portfolio,
-                                           String batchId, String fileName,
-                                           List<RawImportRecord> out) {
+    private void parseClosedPos(Sheet sheet, Portfolio portfolio,
+                                String batchId, String fileName,
+                                List<RawImportRecord> out) {
         Map<String, Integer> cols = buildColumnIndex(sheet.getRow(4));
-
         for (int i = 5; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             if (row == null || isInvalidRow(row)) continue;
-
             try {
                 ObjectNode payload = buildClosedPosPayload(row, cols);
-
-                out.add(RawImportRecord.builder()
-                        .batchId(batchId)
-                        .portfolioId(portfolio.getId())
-                        .importSource(PortfolioSource.XTB.name())
-                        .fileName(fileName)
-                        .rowNumber(i)
-                        .rawPayload(objectMapper.writeValueAsString(payload))
-                        .status(RawImportStatus.PENDING)
-                        .build());
-
+                out.add(buildRecord(batchId, portfolio.getId(), fileName, i, payload));
             } catch (Exception e) {
                 log.warn("XTB ClosedPos linha {}: {}", i, e.getMessage());
             }
         }
     }
 
+    private RawImportRecord buildRecord(String batchId, Long portfolioId,
+                                        String fileName, int row, ObjectNode payload) {
+        try {
+            return RawImportRecord.builder()
+                    .batchId(batchId)
+                    .portfolioId(portfolioId)
+                    .importSource(PortfolioSource.XTB.name())
+                    .fileName(fileName)
+                    .rowNumber(row)
+                    .rawPayload(objectMapper.writeValueAsString(payload))
+                    .status(RawImportStatus.PENDING)
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao serializar payload: " + e.getMessage(), e);
+        }
+    }
+
     // ════════════════════════════════════════════════════════════
-    // Payload builders  (raw → JSON)
+    // Mapping helpers — JSON → entidades canónicas
+    // ════════════════════════════════════════════════════════════
+
+    private MappingResult mapCashOps(JsonNode p, Portfolio portfolio) {
+        String ticker        = p.path("ticker").asText("");
+        String type          = p.path("type").asText("");
+        String comment       = p.path("comment").asText("");
+        String transactionId = p.path("transactionId").asText("");
+        BigDecimal amount    = bd(p.path("amount").asText(null));
+        LocalDateTime time   = dt(p.path("time").asText(null));
+
+        boolean hasAsset = !ticker.isBlank();
+
+        if (hasAsset) {
+            TransactionType txType   = resolveTransactionType(type);
+            Asset asset = findOrCreateAsset(ticker, p.path("instrument").asText(""));
+
+            BigDecimal quantity = BigDecimal.ZERO;
+            BigDecimal price    = BigDecimal.ZERO;
+            BigDecimal taxPct   = BigDecimal.ZERO;
+            String currency     = "EUR";
+
+            if (txType == TransactionType.BUY || txType == TransactionType.SELL) {
+                ParsedBuySell parsed = parseBuySell(comment);
+                quantity = quantityConverter(parsed.quantity());
+                price    = parsed.price();
+            } else if (txType == TransactionType.DIVIDEND || txType == TransactionType.WITHHOLDING_TAX) {
+                ParsedDividend parsed = parseDividend(comment);
+                currency = parsed.currency();
+                price    = parsed.pricePerShare();
+                taxPct   = parsed.taxPercentage();
+            }
+
+            Transaction tx = Transaction.builder()
+                    .portfolio(portfolio).asset(asset)
+                    .externalId(transactionId).type(txType)
+                    .quantity(quantity).price(price)
+                    .totalAmount(amount).transactionDate(time)
+                    .currency(currency).taxPercentage(taxPct)
+                    .importSource(PortfolioSource.XTB.name())
+                    .notes(comment)
+                    .build();
+
+            return new MappingResult(List.of(tx), List.of(), List.of());
+        }
+
+        if (!transactionId.isBlank()) {
+            TransactionType cfType;
+            try { cfType = resolveTransactionType(type); }
+            catch (IllegalArgumentException e) { cfType = TransactionType.OTHER; }
+
+            CashFlow cf = CashFlow.builder()
+                    .portfolio(portfolio)
+                    .externalId(transactionId)
+                    .importSource(PortfolioSource.XTB.name())
+                    .flowDate(time).amount(amount)
+                    .type(cfType).currency("EUR")
+                    .comment(comment)
+                    .build();
+
+            return new MappingResult(List.of(), List.of(cf), List.of());
+        }
+
+        return MappingResult.empty();
+    }
+
+    private MappingResult mapClosedPos(JsonNode p, Portfolio portfolio) {
+        String ticker = p.path("ticker").asText("");
+        Asset asset = assetRepository.findByTicker(ticker)
+                .orElseGet(() -> assetRepository.save(Asset.builder()
+                        .ticker(ticker).symbol(ticker)
+                        .instrument(p.path("instrument").asText(""))
+                        .type(AssetType.STOCK)
+                        .source(PortfolioSource.XTB)
+                        .build()));
+
+        ClosedPosition cp = ClosedPosition.builder()
+                .portfolio(portfolio).asset(asset)
+                .instrument(p.path("instrument").asText(""))
+                .category(p.path("category").asText(""))
+                .ticker(ticker)
+                .type(p.path("type").asText(""))
+                .volume(bd(p.path("volume").asText(null)))
+                .openPrice(bd(p.path("openPrice").asText(null)))
+                .closePrice(bd(p.path("closePrice").asText(null)))
+                .openTime(dt(p.path("openTime").asText(null)))
+                .closeTime(dt(p.path("closeTime").asText(null)))
+                .product(p.path("product").asText(""))
+                .profitLoss(bd(p.path("profitLoss").asText(null)))
+                .grossProfit(bd(p.path("grossProfit").asText(null)))
+                .purchaseValue(bd(p.path("purchaseValue").asText(null)))
+                .saleValue(bd(p.path("saleValue").asText(null)))
+                .stopLoss(bd(p.path("stopLoss").asText(null)))
+                .takeProfit(bd(p.path("takeProfit").asText(null)))
+                .commission(bd(p.path("commission").asText(null)))
+                .margin(bd(p.path("margin").asText(null)))
+                .swap(bd(p.path("swap").asText(null)))
+                .rollover(bd(p.path("rollover").asText(null)))
+                .openConversionRate(bd(p.path("openConversionRate").asText(null)))
+                .closeConversionRate(bd(p.path("closeConversionRate").asText(null)))
+                .closeOrigin(p.path("closeOrigin").asText(""))
+                .positionId(p.path("positionId").asText(""))
+                .comment(p.path("comment").asText(""))
+                .importSource("XTB")
+                .build();
+
+        return new MappingResult(List.of(), List.of(), List.of(cp));
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // Payload builders — Excel Row → JSON
     // ════════════════════════════════════════════════════════════
 
     private ObjectNode buildCashOpsPayload(XTBRowData d) {
         ObjectNode n = objectMapper.createObjectNode();
-        n.put("sheetType",    "CASH_OPERATIONS");
-        n.put("type",         d.type);
-        n.put("ticker",       d.ticker);
-        n.put("instrument",   d.instrument);
-        n.put("time",         d.time != null ? d.time.toString() : null);
-        n.put("amount",       d.amount != null ? d.amount.toPlainString() : null);
-        n.put("transactionId",d.transactionId);
-        n.put("comment",      d.comment);
+        n.put("sheetType",     "CASH_OPERATIONS");
+        n.put("type",          d.type());
+        n.put("ticker",        d.ticker());
+        n.put("instrument",    d.instrument());
+        n.put("time",          d.time() != null ? d.time().toString() : null);
+        n.put("amount",        d.amount() != null ? d.amount().toPlainString() : null);
+        n.put("transactionId", d.transactionId());
+        n.put("comment",       d.comment());
         return n;
     }
 
@@ -205,7 +315,7 @@ public class XTBImportAdapter implements BrokerImportAdapter {
     }
 
     // ════════════════════════════════════════════════════════════
-    // Helpers públicos (reutilizados pelo ImportOrchestrator)
+    // Utilitários de negócio
     // ════════════════════════════════════════════════════════════
 
     public static BigDecimal quantityConverter(String value) {
@@ -237,15 +347,12 @@ public class XTBImportAdapter implements BrokerImportAdapter {
         return assetRepository.findByTicker(ticker)
                 .filter(a -> a.getTicker() != null && a.getInstrument() != null)
                 .orElseGet(() -> assetRepository.save(Asset.builder()
-                        .ticker(ticker)
-                        .symbol(ticker)
+                        .ticker(ticker).symbol(ticker)
                         .instrument(instrument)
                         .type(AssetType.STOCK)
                         .source(PortfolioSource.XTB)
                         .build()));
     }
-
-    // ── Parse helpers (comment field) ────────────────────────────
 
     public record ParsedBuySell(String quantity, BigDecimal price) {}
     public record ParsedDividend(String currency, BigDecimal pricePerShare, BigDecimal taxPercentage) {}
@@ -262,18 +369,15 @@ public class XTBImportAdapter implements BrokerImportAdapter {
         String[] p = comment.trim().split("\\s+");
         String currency = p[1];
         String priceStr = p[2].contains("/") ? p[2].split("/")[0] : "0";
-        double pct = p[3].contains("%")
-                ? Double.parseDouble(p[3].split("%")[0])
-                : 0.0;
+        double pct = p[3].contains("%") ? Double.parseDouble(p[3].split("%")[0]) : 0.0;
         return new ParsedDividend(
                 currency,
                 new BigDecimal(priceStr),
-                BigDecimal.valueOf(pct / 100).setScale(3, RoundingMode.UNNECESSARY)
-        );
+                BigDecimal.valueOf(pct / 100).setScale(3, RoundingMode.UNNECESSARY));
     }
 
     // ════════════════════════════════════════════════════════════
-    // Sheet-level helpers
+    // Sheet / Cell helpers
     // ════════════════════════════════════════════════════════════
 
     private String detectSheetType(Sheet sheet) {
@@ -314,8 +418,6 @@ public class XTBImportAdapter implements BrokerImportAdapter {
     private record XTBRowData(String type, String ticker, String instrument,
                                LocalDateTime time, BigDecimal amount,
                                String transactionId, String comment) {}
-
-    // ── Cell helpers ─────────────────────────────────────────────
 
     private String getByCol(Row row, Map<String, Integer> cols, String col) {
         Integer idx = cols.get(col.toLowerCase());
@@ -380,6 +482,16 @@ public class XTBImportAdapter implements BrokerImportAdapter {
         return empty > 2;
     }
 
+    private BigDecimal bd(String s) {
+        if (s == null || s.isBlank()) return null;
+        try { return new BigDecimal(s); } catch (NumberFormatException e) { return null; }
+    }
+
     private String bdStr(BigDecimal v) { return v != null ? v.toPlainString() : null; }
     private String dtStr(LocalDateTime v) { return v != null ? v.toString() : null; }
+
+    private LocalDateTime dt(String s) {
+        if (s == null || s.isBlank()) return null;
+        try { return LocalDateTime.parse(s); } catch (Exception e) { return null; }
+    }
 }
