@@ -865,6 +865,85 @@
             margin-top: 3px;
             font-family: var(--mono);
         }
+
+        /* REAL ESTATE */
+        .re-property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .re-property-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            cursor: pointer;
+            transition: border-color var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .re-property-card:hover { border-color: var(--accent); }
+        .re-property-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+        }
+        .re-property-card.rental::before  { background: var(--accent); }
+        .re-property-card.flip::before    { background: var(--warn); }
+        .re-property-card.sold::before    { background: var(--text3); }
+        .re-property-address {
+            font-size: 14px; font-weight: 500; color: var(--text);
+            margin-bottom: 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .re-property-meta {
+            font-size: 11px; color: var(--text3);
+            margin-bottom: 14px;
+            display: flex; gap: 8px; align-items: center;
+        }
+        .re-kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .re-kpi { background: var(--bg3); border-radius: 4px; padding: 8px 10px; text-align: center; }
+        .re-kpi-label { font-size: 9px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
+        .re-kpi-value { font-family: var(--mono); font-size: 13px; color: var(--text); }
+        .re-kpi-value.positive { color: var(--accent); }
+        .re-kpi-value.negative { color: var(--danger); }
+
+        .re-metrics-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .re-metric-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+        .re-metric-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+        .re-metric-value { font-family: var(--mono); font-size: 20px; color: var(--text); margin-bottom: 2px; }
+        .re-metric-value.positive { color: var(--accent); }
+        .re-metric-value.negative { color: var(--danger); }
+        .re-metric-value.warn     { color: var(--warn); }
+        .re-metric-desc { font-size: 10px; color: var(--text3); }
+
+        .re-drawer {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .re-drawer.open { display: block; }
+        .re-drawer-title {
+            font-size: 13px; font-weight: 600; color: var(--text);
+            margin-bottom: 16px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .re-close-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 2px 6px; }
+        .re-close-btn:hover { color: var(--danger); }
+        .badge-warn { background: rgba(240,160,93,.15); color: var(--warn); }
+        .btn-warn   { background: var(--warn); color: #0d0f14; }
+        .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
     </style>
 </head>
 <body>
@@ -962,6 +1041,10 @@
         </div>
 
         <div class="nav-section">Market</div>
+        <div class="nav-section">Real Estate</div>
+        <div class="nav-item" onclick="nav('realestate')">
+            <span class="nav-icon">⌂</span> Properties
+        </div>
         <div class="nav-item" onclick="nav('marketdata')">
             <span class="nav-icon">↗</span> Market Data
         </div>
@@ -1409,7 +1492,186 @@
 
             </div><!-- /inc-content -->
         </div><!-- /panel-income -->
+        <!-- REAL ESTATE -->
+        <div class="panel" id="panel-realestate">
 
+            <div class="metrics-selector">
+                <label>Portfolio</label>
+                <select id="re-portfolio-id" onchange="loadProperties()">
+                    <option value="">Select portfolio…</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="loadProperties()">↻ Refresh</button>
+                <button class="btn btn-ghost btn-sm" onclick="openReForm()">+ New property</button>
+                <span class="last-updated" id="re-last-updated"></span>
+            </div>
+
+            <!-- Form: criar imóvel -->
+            <div id="re-form-drawer" class="re-drawer">
+                <div class="re-drawer-title">
+                    <span id="re-form-title">New property</span>
+                    <button class="re-close-btn" onclick="closeReForm()">✕</button>
+                </div>
+                <div class="form-grid form-grid-2">
+                    <div class="field" style="grid-column:1/-1;">
+                        <label>Address</label>
+                        <input type="text" id="re-address" placeholder="Rua das Flores 12, Lisboa"/>
+                    </div>
+                    <div class="field">
+                        <label>Property Type</label>
+                        <select id="re-type">
+                            <option value="APARTMENT">Apartment</option>
+                            <option value="HOUSE">House</option>
+                            <option value="TOWNHOUSE">Townhouse</option>
+                            <option value="COMMERCIAL">Commercial</option>
+                            <option value="LAND">Land</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Strategy</label>
+                        <select id="re-strategy">
+                            <option value="RENTAL">Rental (Buy &amp; Hold)</option>
+                            <option value="FIX_AND_FLIP">Fix &amp; Flip</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Purchase Price (€)</label>
+                        <input type="number" id="re-purchase-price" placeholder="250000" step="0.01"/>
+                    </div>
+                    <div class="field">
+                        <label>Purchase Date</label>
+                        <input type="datetime-local" id="re-purchase-date"/>
+                    </div>
+                    <div class="field">
+                        <label>Current Estimated Value (€)</label>
+                        <input type="number" id="re-current-value" placeholder="Leave blank = purchase price" step="0.01"/>
+                    </div>
+                    <div class="field">
+                        <label>Down Payment (€) — optional</label>
+                        <input type="number" id="re-down-payment" placeholder="50000" step="0.01"/>
+                    </div>
+                    <div class="field">
+                        <label>Loan Amount (€) — optional</label>
+                        <input type="number" id="re-loan" placeholder="200000" step="0.01"/>
+                    </div>
+                    <div class="field">
+                        <label>Interest Rate (%) — optional</label>
+                        <input type="number" id="re-interest-rate" placeholder="3.5" step="0.001"/>
+                    </div>
+                    <div class="field" style="grid-column:1/-1;">
+                        <label>Notes</label>
+                        <input type="text" id="re-notes" placeholder="Additional notes…"/>
+                    </div>
+                </div>
+                <div class="flex gap-10 mt-16">
+                    <button class="btn btn-primary" onclick="saveProperty()">Save property</button>
+                    <button class="btn btn-secondary" onclick="closeReForm()">Cancel</button>
+                </div>
+                <div id="re-form-msg" class="alert mt-12"></div>
+            </div>
+
+            <!-- Lista de imóveis -->
+            <div id="re-properties-list">
+                <div class="empty-state"><div class="icon">⌂</div>Select a portfolio to see properties</div>
+            </div>
+
+            <!-- Drawer: detalhe -->
+            <div id="re-detail-drawer" class="re-drawer">
+                <div class="re-drawer-title">
+                    <span id="re-detail-title">Property detail</span>
+                    <div class="flex gap-10">
+                        <button class="btn btn-secondary btn-sm" onclick="openValuationModal()">Update valuation</button>
+                        <button class="btn btn-warn btn-sm" onclick="openSaleModal()">Register sale</button>
+                        <button class="re-close-btn" onclick="closeReDetail()">✕</button>
+                    </div>
+                </div>
+                <div class="income-tabs" id="re-detail-tabs">
+                    <div class="income-tab active" onclick="reDetailTab('metrics', this)">Metrics</div>
+                    <div class="income-tab" onclick="reDetailTab('transactions', this)">Cash Flows</div>
+                </div>
+                <div id="re-tab-metrics">
+                    <div class="re-metrics-strip" id="re-metrics-strip">
+                        <div class="empty-state"><div class="icon">▦</div>Loading metrics…</div>
+                    </div>
+                </div>
+                <div id="re-tab-transactions" style="display:none;">
+                    <div style="background:var(--bg3); border-radius:var(--radius); padding:14px; margin-bottom:16px; border:1px solid var(--border);">
+                        <div style="font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-bottom:12px;">Add cash flow</div>
+                        <div class="form-grid form-grid-3">
+                            <div class="field">
+                                <label>Type</label>
+                                <select id="re-tx-type">
+                                    <optgroup label="Income">
+                                        <option value="RENT">Rent</option>
+                                        <option value="OTHER_INCOME">Other Income</option>
+                                    </optgroup>
+                                    <optgroup label="Operating Expenses">
+                                        <option value="INSURANCE">Insurance</option>
+                                        <option value="PROPERTY_TAX">Property Tax</option>
+                                        <option value="MAINTENANCE">Maintenance</option>
+                                        <option value="MANAGEMENT_FEE">Management Fee</option>
+                                        <option value="UTILITIES">Utilities</option>
+                                        <option value="HOA">HOA</option>
+                                        <option value="OTHER_EXPENSE">Other Expense</option>
+                                    </optgroup>
+                                    <optgroup label="Debt Service">
+                                        <option value="MORTGAGE_PAYMENT">Mortgage Payment</option>
+                                    </optgroup>
+                                    <optgroup label="One-off">
+                                        <option value="RENOVATION">Renovation</option>
+                                        <option value="CLOSING_COST_PURCHASE">Closing Cost (Purchase)</option>
+                                        <option value="CLOSING_COST_SALE">Closing Cost (Sale)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Amount (€)</label>
+                                <input type="number" id="re-tx-amount" placeholder="1200" step="0.01"/>
+                            </div>
+                            <div class="field">
+                                <label>Date</label>
+                                <input type="datetime-local" id="re-tx-date"/>
+                            </div>
+                        </div>
+                        <div class="field mt-12">
+                            <label>Description (opcional)</label>
+                            <input type="text" id="re-tx-desc" placeholder="Monthly rent payment…"/>
+                        </div>
+                        <button class="btn btn-primary btn-sm mt-12" onclick="addReTransaction()">Add movement</button>
+                        <div id="re-tx-msg" class="alert mt-12"></div>
+                    </div>
+                    <div id="re-tx-list">
+                        <div class="empty-state"><div class="icon">⬡</div>No cash flow movements yet.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: valuation -->
+            <div id="re-valuation-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; align-items:center; justify-content:center;">
+                <div style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:28px; width:380px;">
+                    <div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:16px;">Update valuation</div>
+                    <div class="field"><label>New estimated value (€)</label><input type="number" id="re-val-amount" placeholder="280000" step="0.01"/></div>
+                    <div class="flex gap-10 mt-16">
+                        <button class="btn btn-primary" onclick="saveValuation()">Save</button>
+                        <button class="btn btn-secondary" onclick="closeValuationModal()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: sale -->
+            <div id="re-sale-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; align-items:center; justify-content:center;">
+                <div style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:28px; width:380px;">
+                    <div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:16px;">Register sale</div>
+                    <div class="field"><label>Sale price (€)</label><input type="number" id="re-sale-price" placeholder="310000" step="0.01"/></div>
+                    <div class="field mt-12"><label>Sale date</label><input type="datetime-local" id="re-sale-date"/></div>
+                    <div class="flex gap-10 mt-16">
+                        <button class="btn btn-danger" onclick="saveSale()">Mark as Sold</button>
+                        <button class="btn btn-secondary" onclick="closeSaleModal()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /panel-realestate -->
         <!-- ── MARKET DATA ── -->
         <div class="panel" id="panel-marketdata">
             <div class="card">
@@ -1695,6 +1957,7 @@
     // Navigation
     // ════════════════════════════════════════════
     const PAGE_TITLES = {
+        realestate: 'Real Estate — Properties',
         dashboard:'Dashboard', portfolios:'Portfolios', metrics:'Metrics',
         transactions:'Transactions', positions:'Positions',
         'close-positions':'Close Positions', cashflows:'Cash Flows',
@@ -2176,7 +2439,7 @@
         const ids = state.portfolios.map(p =>
             `<option value="${p.id}">${p.name} (#${p.id})</option>`).join('');
         ['tx-portfolio-id','pos-portfolio-id','cp-portfolio-id','cf-portfolio-id',
-            'imp-portfolio-id','met-portfolio-id','inc-portfolio-id'].forEach(id => {
+            'imp-portfolio-id','met-portfolio-id','inc-portfolio-id', 're-portfolio-id'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = `<option value="">Select portfolio…</option>${ids}`;
         });
@@ -2446,6 +2709,234 @@
         document.getElementById('inc-tab-dividends').style.display  = name === 'dividends' ? '' : 'none';
         document.getElementById('inc-tab-interest').style.display   = name === 'interest'  ? '' : 'none';
         document.getElementById('inc-tab-cashflows').style.display  = name === 'cashflows' ? '' : 'none';
+    }
+    // ════════════════════════════════════════════
+    // REAL ESTATE
+    // ════════════════════════════════════════════
+    let _reState = { portfolioId: null, selectedPropertyId: null, properties: [] };
+
+    const eur2 = v => v == null ? '–' : parseFloat(v).toLocaleString('pt-PT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+    const pct2 = v => v == null ? '–' : parseFloat(v).toLocaleString('pt-PT', {minimumFractionDigits:2, maximumFractionDigits:2}) + '%';
+    const plCol = v => { if (v == null) return ''; return parseFloat(v) >= 0 ? 'positive' : 'negative'; };
+
+    async function loadProperties() {
+        const id = document.getElementById('re-portfolio-id').value;
+        if (!id) return;
+        _reState.portfolioId = id;
+        closeReDetail();
+        const r = await api('GET', `/api/portfolios/${id}/properties`);
+        const el = document.getElementById('re-properties-list');
+        if (!r.ok) { el.innerHTML = `<div style="color:var(--danger);">${r.data?.message || 'Error'}</div>`; return; }
+        _reState.properties = r.data || [];
+        if (!_reState.properties.length) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">⌂</div>No properties yet. Click "+ New property".</div>`;
+            return;
+        }
+        el.innerHTML = `<div class="re-property-grid">${_reState.properties.map(renderPropertyCard).join('')}</div>`;
+        document.getElementById('re-last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    }
+
+    function renderPropertyCard(p) {
+        const strategy = p.strategy === 'RENTAL' ? 'rental' : 'flip';
+        const statusBadge = p.status === 'SOLD' ? '<span class="badge badge-gray">SOLD</span>' :
+            p.status === 'UNDER_RENOVATION' ? '<span class="badge badge-warn">RENOVATION</span>' :
+                p.status === 'LISTED_FOR_SALE'  ? '<span class="badge badge-purple">FOR SALE</span>' :
+                    '<span class="badge badge-green">ACTIVE</span>';
+        const val   = parseFloat(p.currentEstimatedValue || 0);
+        const bought= parseFloat(p.purchasePrice || 0);
+        const gain  = val - bought;
+        const gainCls = gain >= 0 ? 'positive' : 'negative';
+        return `
+    <div class="re-property-card ${strategy}${p.status==='SOLD'?' sold':''}" onclick="openReDetail(${p.id})">
+        <div class="re-property-address">${p.address}</div>
+        <div class="re-property-meta">
+            <span class="badge badge-purple">${p.propertyType}</span>
+            <span class="badge badge-gray">${p.strategy.replace('_',' ')}</span>
+            ${statusBadge}
+        </div>
+        <div class="re-kpi-row">
+            <div class="re-kpi"><div class="re-kpi-label">Purchase</div><div class="re-kpi-value">${eur2(p.purchasePrice)}</div></div>
+            <div class="re-kpi"><div class="re-kpi-label">Est. Value</div><div class="re-kpi-value">${eur2(p.currentEstimatedValue)}</div></div>
+            <div class="re-kpi"><div class="re-kpi-label">Unrealised</div><div class="re-kpi-value ${gainCls}">${gain>=0?'+':''}${parseFloat(gain).toLocaleString('pt-PT',{minimumFractionDigits:2})} €</div></div>
+        </div>
+    </div>`;
+    }
+
+    async function openReDetail(propertyId) {
+        _reState.selectedPropertyId = propertyId;
+        const p = _reState.properties.find(x => x.id === propertyId);
+        if (!p) return;
+        document.getElementById('re-detail-title').textContent = p.address;
+        document.getElementById('re-detail-drawer').classList.add('open');
+        reDetailTab('metrics', document.querySelector('#re-detail-tabs .income-tab'));
+        await loadReMetrics(propertyId, p.strategy);
+        await loadReTransactions(propertyId);
+    }
+
+    function closeReDetail() { document.getElementById('re-detail-drawer').classList.remove('open'); _reState.selectedPropertyId = null; }
+
+    function reDetailTab(name, el) {
+        document.querySelectorAll('#re-detail-tabs .income-tab').forEach(t => t.classList.remove('active'));
+        if (el) el.classList.add('active');
+        document.getElementById('re-tab-metrics').style.display     = name === 'metrics'      ? '' : 'none';
+        document.getElementById('re-tab-transactions').style.display = name === 'transactions' ? '' : 'none';
+    }
+
+    async function loadReMetrics(propertyId, strategy) {
+        const strip = document.getElementById('re-metrics-strip');
+        strip.innerHTML = `<div class="empty-state"><div class="icon">▦</div>Loading…</div>`;
+        const endpoint = strategy === 'RENTAL' ? 'rental' : 'flip';
+        const r = await api('GET', `/api/portfolios/${_reState.portfolioId}/properties/${propertyId}/metrics/${endpoint}`);
+        if (!r.ok) { strip.innerHTML = `<div style="color:var(--danger);">${r.data?.message || 'Error'}</div>`; return; }
+        const m = r.data;
+        if (strategy === 'RENTAL') {
+            strip.innerHTML = [
+                reMetricCard('Gross Annual Rent',  eur2(m.grossAnnualRent),        'Trailing 12m income', ''),
+                reMetricCard('Operating Expenses', eur2(m.operatingExpensesAnnual),'Insurance, tax, maintenance…', 'negative'),
+                reMetricCard('NOI',                eur2(m.noi),                    'Net Operating Income', plCol(m.noi)),
+                reMetricCard('Cap Rate',           pct2(m.capRate),                'NOI / current value', plCol(m.capRate)),
+                reMetricCard('Gross Rental Yield', pct2(m.grossRentalYield),       'Annual rent / purchase price', plCol(m.grossRentalYield)),
+                reMetricCard('Cash-on-Cash Return',pct2(m.cashOnCashReturn),       'Annual cash flow / cash invested', plCol(m.cashOnCashReturn)),
+                reMetricCard('Annual Cash Flow',   eur2(m.annualCashFlow),         'NOI - debt service', plCol(m.annualCashFlow)),
+                reMetricCard('DSCR',               m.dscr != null ? parseFloat(m.dscr).toFixed(2) : 'n/a', 'NOI / debt service (>1 = safe)', m.dscr != null && parseFloat(m.dscr) >= 1 ? 'positive' : 'negative'),
+                reMetricCard('Cash Invested',      eur2(m.cashInvested),           'Down payment + acquisition costs', ''),
+                reMetricCard('Total Return %',     pct2(m.totalReturnPercentage),  'Cash flow + appreciation', plCol(m.totalReturnPercentage)),
+            ].join('');
+        } else {
+            strip.innerHTML = [
+                reMetricCard('Acquisition Cost',   eur2(m.acquisitionCost),   'Purchase + closing costs', ''),
+                reMetricCard('Renovation Cost',    eur2(m.renovationCost),    'All renovation expenses', ''),
+                reMetricCard('Holding Cost',       eur2(m.holdingCost),       'Insurance, tax, mortgage during hold', ''),
+                reMetricCard('Selling Cost',       eur2(m.sellingCost),       'Closing costs on sale', ''),
+                reMetricCard('Total Project Cost', eur2(m.totalProjectCost),  'All-in cost', ''),
+                reMetricCard('Sale Proceeds',      eur2(m.saleProceeds) + (m.saleProjected ? ' (projected)' : ''), 'Actual or estimated', ''),
+                reMetricCard('Profit',             eur2(m.profit),            'Sale - total cost', plCol(m.profit)),
+                reMetricCard('Cash Invested',      eur2(m.cashInvested),      'Own capital deployed', ''),
+                reMetricCard('ROI',                pct2(m.roi),               'Profit / cash invested', plCol(m.roi)),
+                reMetricCard('Days Held',          (m.daysHeld || '–') + ' days', 'Duration of project', ''),
+                reMetricCard('Annualized ROI',     pct2(m.annualizedRoi),     'ROI compounded to yearly', plCol(m.annualizedRoi)),
+            ].join('');
+        }
+    }
+
+    function reMetricCard(label, value, desc, cls) {
+        return `<div class="re-metric-card">
+        <div class="re-metric-label">${label}</div>
+        <div class="re-metric-value ${cls}">${value}</div>
+        <div class="re-metric-desc">${desc}</div>
+    </div>`;
+    }
+
+    async function loadReTransactions(propertyId) {
+        const r = await api('GET', `/api/portfolios/${_reState.portfolioId}/properties/${propertyId}/transactions`);
+        const el = document.getElementById('re-tx-list');
+        if (!r.ok || !r.data || !r.data.length) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">⬡</div>No movements yet.</div>`; return;
+        }
+        el.innerHTML = `<table><thead><tr><th>Date</th><th>Type</th><th style="text-align:right;">Amount</th><th>Description</th><th></th></tr></thead><tbody>${r.data.map(t => {
+            const amt = parseFloat(t.amount || 0);
+            return `<tr>
+            <td class="mono" style="font-size:12px;">${t.transactionDate?.slice(0,10) || '–'}</td>
+            <td><span class="badge ${amt >= 0 ? 'badge-green' : 'badge-red'}">${t.type}</span></td>
+            <td class="mono" style="text-align:right; color:${amt>=0?'var(--accent)':'var(--danger)'};">${amt>=0?'+':''}${Math.abs(amt).toLocaleString('pt-PT',{minimumFractionDigits:2})} €</td>
+            <td style="color:var(--text3); font-size:12px;">${t.description || '–'}</td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteReTx(${t.id})">✕</button></td>
+        </tr>`;
+        }).join('')}</tbody></table>`;
+    }
+
+    async function addReTransaction() {
+        const pid = _reState.selectedPropertyId;
+        if (!pid) return;
+        const type   = document.getElementById('re-tx-type').value;
+        const amount = parseFloat(document.getElementById('re-tx-amount').value);
+        const date   = document.getElementById('re-tx-date').value;
+        const desc   = document.getElementById('re-tx-desc').value.trim();
+        const msgEl  = document.getElementById('re-tx-msg');
+        if (!type || !amount || !date) { msgEl.textContent = 'Fill in type, amount and date'; msgEl.className = 'alert show alert-err'; return; }
+        const r = await api('POST', `/api/portfolios/${_reState.portfolioId}/properties/${pid}/transactions`, { type, amount, transactionDate: date, description: desc });
+        if (r.ok) {
+            msgEl.textContent = 'Movement added'; msgEl.className = 'alert show alert-ok';
+            setTimeout(() => msgEl.className = 'alert', 2500);
+            document.getElementById('re-tx-amount').value = '';
+            document.getElementById('re-tx-desc').value = '';
+            const p = _reState.properties.find(x => x.id === pid);
+            await loadReTransactions(pid);
+            await loadReMetrics(pid, p?.strategy);
+        } else {
+            msgEl.textContent = r.data?.message || 'Error'; msgEl.className = 'alert show alert-err';
+        }
+    }
+
+    async function deleteReTx(txId) {
+        const pid = _reState.selectedPropertyId;
+        if (!confirm('Delete this movement?')) return;
+        const r = await api('DELETE', `/api/portfolios/${_reState.portfolioId}/properties/${pid}/transactions/${txId}`);
+        if (r.ok) {
+            const p = _reState.properties.find(x => x.id === pid);
+            await loadReTransactions(pid);
+            await loadReMetrics(pid, p?.strategy);
+        }
+    }
+
+    function openReForm() {
+        document.getElementById('re-form-title').textContent = 'New property';
+        ['re-address','re-purchase-price','re-current-value','re-down-payment','re-loan','re-interest-rate','re-notes'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('re-purchase-date').value = new Date().toISOString().slice(0,16);
+        document.getElementById('re-form-drawer').classList.add('open');
+    }
+    function closeReForm() { document.getElementById('re-form-drawer').classList.remove('open'); document.getElementById('re-form-msg').className = 'alert'; }
+
+    async function saveProperty() {
+        const portfolioId = _reState.portfolioId;
+        if (!portfolioId) return;
+        const msgEl = document.getElementById('re-form-msg');
+        const body = {
+            address:               document.getElementById('re-address').value.trim(),
+            propertyType:          document.getElementById('re-type').value,
+            strategy:              document.getElementById('re-strategy').value,
+            purchasePrice:         parseFloat(document.getElementById('re-purchase-price').value) || null,
+            purchaseDate:          document.getElementById('re-purchase-date').value || null,
+            currentEstimatedValue: parseFloat(document.getElementById('re-current-value').value) || null,
+            downPaymentAmount:     parseFloat(document.getElementById('re-down-payment').value) || null,
+            loanAmount:            parseFloat(document.getElementById('re-loan').value) || null,
+            interestRatePercentage:parseFloat(document.getElementById('re-interest-rate').value) || null,
+            notes:                 document.getElementById('re-notes').value.trim() || null,
+            currency: 'EUR'
+        };
+        if (!body.address || !body.purchasePrice || !body.purchaseDate) {
+            msgEl.textContent = 'Address, purchase price and date are required'; msgEl.className = 'alert show alert-err'; return;
+        }
+        const r = await api('POST', `/api/portfolios/${portfolioId}/properties`, body);
+        if (r.ok) {
+            msgEl.textContent = 'Property saved!'; msgEl.className = 'alert show alert-ok';
+            setTimeout(() => { closeReForm(); loadProperties(); }, 1200);
+        } else {
+            msgEl.textContent = r.data?.message || 'Error'; msgEl.className = 'alert show alert-err';
+        }
+    }
+
+    function openValuationModal()  { document.getElementById('re-valuation-modal').style.display = 'flex'; }
+    function closeValuationModal() { document.getElementById('re-valuation-modal').style.display = 'none'; }
+
+    async function saveValuation() {
+        const pid   = _reState.selectedPropertyId;
+        const value = parseFloat(document.getElementById('re-val-amount').value);
+        if (!pid || !value) return;
+        const r = await api('PATCH', `/api/portfolios/${_reState.portfolioId}/properties/${pid}/valuation?value=${value}`);
+        if (r.ok) { closeValuationModal(); await loadProperties(); await loadReMetrics(pid, _reState.properties.find(x=>x.id===pid)?.strategy); }
+    }
+
+    function openSaleModal()  { document.getElementById('re-sale-date').value = new Date().toISOString().slice(0,16); document.getElementById('re-sale-modal').style.display = 'flex'; }
+    function closeSaleModal() { document.getElementById('re-sale-modal').style.display = 'none'; }
+
+    async function saveSale() {
+        const pid       = _reState.selectedPropertyId;
+        const salePrice = parseFloat(document.getElementById('re-sale-price').value);
+        const saleDate  = document.getElementById('re-sale-date').value;
+        if (!pid || !salePrice) return;
+        const r = await api('PATCH', `/api/portfolios/${_reState.portfolioId}/properties/${pid}/sale?salePrice=${salePrice}&saleDate=${encodeURIComponent(saleDate)}`);
+        if (r.ok) { closeSaleModal(); closeReDetail(); await loadProperties(); }
     }
 </script>
 </body>
